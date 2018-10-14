@@ -12,3 +12,6 @@ django = "*"
 
 [requires]
 python_version = "3.6"
+
+[scripts]
+parser = "python parser.py"
