@@ -30,6 +30,7 @@
           <table class="table table-hover">
             <thead class="thead-dark">
               <tr>
+                <th scope="col">Cinema</th>
                 <th scope="col">Date</th>
                 <th scope="col">Time</th>
                 <th scope="col">Title</th>
@@ -39,6 +40,7 @@
               {% for day in schedule %}
                 {% for movie in day.movies %}
                   <tr>
+                    <td>{{ movie.cinema }}</td>
                     <td>{{ day.date }}</td>
                     <td>{{ movie.time }}</td>
                     <td>{{ movie.title }}</td>
