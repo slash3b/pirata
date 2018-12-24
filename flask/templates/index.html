@@ -1,66 +1,155 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
-  <head>
-
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="This website reflects content of patria.md. 
+<head>
+  <meta name="description" content="This website reflects content of patria.md. 
     pirata.md provides movies schedule in Chishinau cinema. 
     Original side is ugly, cumbersome and full of advertising. 
     Here you get all the info you need in one place.">
-    <meta name="author" content="Ilya Tribusean">
-    <meta name="robots" content="index, follow">
+  <meta name="author" content="Ilya Tribusean">
+  <meta name="robots" content="index, follow">
 
-    <title>Patria.md in english, no bullshit. Movies in Chishinau</title>
+  <title>patria.md schedule in english. Movies in Chishinau in English</title>
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+    crossorigin="anonymous">
 
-    <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <style>
+    .bd-placeholder-img {
+      font-size: 1.125rem;
+      text-anchor: middle;
+    }
 
-  </head>
+    @media (min-width: 768px) {
+      .bd-placeholder-img-lg {
+        font-size: 3.5rem;
+      }
+    }
 
-  <body>
- 
-    <!-- Page Content -->
+    .jumbotron {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main role="main">
+
+    <section class="jumbotron text-center">
+      <div class="container">
+        <h1 class="jumbotron-heading">Mirror for patria.md</h1>
+        <p class="lead text-muted">Simple schedule for films in English that are going on right now in patria.md <br>
+          no bullshit UI, no advertising, only info you need</p>
+      </div>
+    </section>
+
+    <div class="album py-5 bg-light">
+      <div class="container">
+        <div class="row">
+          {% if schedule %}
+          {% for title in schedule %}
+          <div class="col-md-12">
+            <div class="card mb-2 shadow-sm">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-sm-2">
+                    <img class="bd-placeholder-img card-img-top" style="width: 100px" src="{{ schedule[title]['cover url'] }}"
+                      focusable="false" role="img" aria-label="Placeholder: {{ schedule[title]['canonical title'] }}">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <table>
+                        <tr>
+                          <td>
+                              <small class="text-muted"> IMDB rating is {{ schedule[title]['rating'] }}</small>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                              <small class="text-muted"> Runtime:
+                                {{ (schedule[title]['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
+                                {{ (schedule[title]['runtimes'][0]|int % 60)|string + 'm' }}
+                              </small>
+                          </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <small class="text-muted">
+                                  <a role="button" target="_blank" class="btn btn-light btn-sm" href="{{ schedule[title]['trailer'] }}">watch trailer</a>
+                                </small>
+                            </td>
+                          </tr>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="col-sm-10">
+                    <h3>{{ title }}</h3>
+                    <p class="card-text">{{ schedule[title]['plot'][0]|truncate(210) }}</p>
+                    <!-- schedule -->
+                    <div class="row">
+                      <div class="col-sm-6">
+                        <h4>Multiplex</h4>
+                        {% if 'Multiplex' in schedule[title] %}
+                          <table>
+                            {% for time_str in schedule[title]['Multiplex']['schedule'] %}
+                              <tr>
+                                <td>
+                                  <span class="badge badge-primary">{{ time_str }}</span>
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </table>
+                        {% else %}
+                         <span class="badge badge-light">no movies in that cinema, sorry</span>
+                        {% endif%}
+                      </div>
+                      <div class="col-sm-6">
+                        <h4>Loteanu</h4>
+                        {% if 'Loteanu' in schedule[title] %}
+                          <table>
+                            {% for time_str in schedule[title]['Multiplex']['schedule'] %}
+                              <tr>
+                                <td>
+                                  <span class="badge badge-primary">{{ time_str }}</span>
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </table>
+                        {% else %}
+                          <span class="badge badge-light">no movies in that cinema, sorry</span>
+                        {% endif%}
+                      </div>
+                      <!-- end of schedule -->
+                    </div>
+                  </div>
+
+                </div>
+                <!-- END OF CARD BODY -->
+              </div>
+              <!-- END OF CARD -->
+            </div>
+            <!-- END OF COL-MD-12 -->
+          </div>
+          {% endfor %}
+          {% else %}
+          <h1> Sorry, something is broken.<br>
+            I can not show the movies righ now, please try again later</h1>
+          {% endif %}
+          <!-- END OF ROW -->
+        </div>
+        <!-- END OF CONTAINER -->
+      </div>
+      <!-- END OF ALBUM -->
+    </div>
+  </main>
+
+  <footer class="text-muted">
     <div class="container">
       <div class="row">
-        <div class="col-lg-12 text-center">
-          <h1 class="mt-5">Patria.md in english</h1>
-          <p class="lead">simple schedule for films in english, <br>
-          no bullshit UI, no advertising, only info you need</p>
+        <div class="com-md-12">
+          <p>
+            <a role="button" target="_blank" class="btn btn-outline-dark" href="https://www.google.com/search?q=movies+in+chisinau&npsic=0&rflfq=1&rlha=0&rllag=47015413,28834314,1354&tbm=lcl&ved=2ahUKEwiX0ve79rjfAhVIJFAKHeMkArsQtgN6BAgEEAQ&tbs=lrf:!2m1!1e2!3sIAE,lf:1,lf_ui:1&rldoc=1#rlfi=hd:;si:;mv:!1m2!1d47.03910999321236!2d28.89302284091798!2m2!1d46.991592108290575!2d28.78487617343751!4m2!1d47.015356336166064!2d28.838949507177745!5i14">view map</a>
+          </p>
         </div>
-        
-        {% if schedule %}
-          <table class="table table-hover">
-            <thead class="thead-dark">
-              <tr>
-                <th scope="col">Cinema</th>
-                <th scope="col">Date</th>
-                <th scope="col">Time</th>
-                <th scope="col">Title</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for day in schedule %}
-                {% for movie in day.movies %}
-                  <tr>
-                    <td>{{ movie.cinema }}</td>
-                    <td>{{ day.date }}</td>
-                    <td>{{ movie.time }}</td>
-                    <td>{{ movie.title }}</td>
-                  </tr>
-                {% endfor %}
-                <hr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% else %}
-          <h1> Sorry, something is broken.<br>
-        I can not show the movies righ now, please try again later</h1>
-        {% endif %}
       </div>
     </div>
-
-  </body>
-
-</html>
+  </footer>

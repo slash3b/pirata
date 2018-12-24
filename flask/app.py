@@ -1,9 +1,9 @@
 from flask import Flask, render_template
 import json
 
-app = Flask(__name__)
+pirata = Flask(__name__)
 
-@app.route('/')
+@pirata.route('/')
 def index():
     with open('../result.json') as file:
         schedule = json.load(file)
