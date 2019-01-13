@@ -59,3 +59,6 @@ if result:
         handle.write(json.dumps(result))
     finally:
         handle.close()
+
+handle = open('result.json', 'w')
+handle.write('{}')
