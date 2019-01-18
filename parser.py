@@ -53,6 +53,9 @@ for name in result.keys():
     trailer = 'http://www.youtube.com' + soup.find('div', 'yt-lockup yt-lockup-tile yt-lockup-video vve-check clearfix').find('a')['href']
     result[name]['trailer'] = trailer
 
+handle = open('result.json', 'w')
+handle.write('{}')
+
 if result:
     try:
         handle = open('result.json', 'w')
@@ -60,5 +63,3 @@ if result:
     finally:
         handle.close()
 
-handle = open('result.json', 'w')
-handle.write('{}')
