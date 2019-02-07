@@ -47,7 +47,7 @@ for name in result.keys():
         if key in movie_data:
             result[name][key] = movie_data[key]
     # now fill in youtube data
-    query_string = urllib.parse.urlencode({"search_query" : movie_data['canonical title']})
+    query_string = urllib.parse.urlencode({"search_query" : movie_data['canonical title']+' trailer'})
     html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
     soup = BeautifulSoup(html_content.read().decode(), 'html.parser')
     trailer = 'http://www.youtube.com' + soup.find('div', 'yt-lockup yt-lockup-tile yt-lockup-video vve-check clearfix').find('a')['href']
