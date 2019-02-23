@@ -59,12 +59,13 @@
                         focusable="false" role="img" aria-label="Placeholder: {{ schedule[title]['canonical title'] }}">
                       <div class="d-flex justify-content-between align-items-center">
                         <table>
-                          <tr>
-                            <td>
-                                <small class="text-muted"> IMDB rating is {{ schedule[title]['rating'] }}</small>
-                            </td>
-                          </tr>
                           {% if schedule[title]['runtimes'] %}
+                            <tr>
+                              <td>
+                                  <small class="text-muted"> IMDB rating is {{ schedule[title]['rating'] }}</small>
+                              </td>
+                            </tr>
+                          
                             <tr>
                               <td>
                                   <small class="text-muted"> Runtime:
