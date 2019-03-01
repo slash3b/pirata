@@ -40,7 +40,8 @@ ia = IMDb()
 
 imdb_keys = ['cover url', 'rating', 'canonical title', 'plot', 'synopsis', 'long imdb title', 'genres', 'runtimes']
 for name in result.keys():
-    movie_data = ia.search_movie(name)[0]
+    clean_name = re.sub('(2D|3D)', '', name)
+    movie_data = ia.search_movie(clean_name)[0]
     ia.update(movie_data)
 
     for key in imdb_keys:
