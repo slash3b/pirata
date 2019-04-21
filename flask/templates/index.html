@@ -40,37 +40,40 @@
     <section class="jumbotron text-center">
       <div class="container">
         <h1 class="jumbotron-heading">Mirror for patria.md</h1>
-        <p class="lead text-muted">Simple schedule for films in English that are going on right now in patria.md <br>
-          no bullshit UI, no advertising, only info you need</p>
+        <p class="lead text-muted">Simple schedule for films in English that are playing on right now in patria.md</p>
       </div>
     </section>
 
     <div class="album py-5 bg-light">
       <div class="container">
         <div class="row">
-          {% if schedule %}
-            {% for title in schedule %}
+          {% if schedule['upcoming'] %}
+          <div class="col-md-12">
+              <h2>Coming soon:</h2>
+          </div>
+          
+            {% for upcoming_movie in schedule['upcoming'] %}
             <div class="col-md-12">
               <div class="card mb-2 shadow-sm">
                 <div class="card-body">
                   <div class="row">
                     <div class="col-sm-2">
-                      <img class="bd-placeholder-img card-img-top" style="width: 100px" src="{{ schedule[title]['cover url'] }}"
-                        focusable="false" role="img" aria-label="Placeholder: {{ schedule[title]['canonical title'] }}">
+                      <img class="bd-placeholder-img card-img-top" style="width: 100px" src="{{ upcoming_movie['cover url'] }}"
+                        focusable="false" role="img" aria-label="Placeholder: {{ upcoming_movie['canonical title'] }}">
                       <div class="d-flex justify-content-between align-items-center">
                         <table>
-                          {% if schedule[title]['runtimes'] %}
+                          {% if upcoming_movie['runtimes'] %}
                             <tr>
                               <td>
-                                  <small class="text-muted"> IMDB rating is {{ schedule[title]['rating'] }}</small>
+                                  <small class="text-muted"> IMDB rating is {{ upcoming_movie['rating'] }}</small>
                               </td>
                             </tr>
                           
                             <tr>
                               <td>
                                   <small class="text-muted"> Runtime:
-                                    {{ (schedule[title]['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
-                                    {{ (schedule[title]['runtimes'][0]|int % 60)|string + 'm' }}
+                                    {{ (upcoming_movie['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
+                                    {{ (upcoming_movie['runtimes'][0]|int % 60)|string + 'm' }}
                                   </small>
                               </td>
                             </tr>
@@ -78,7 +81,62 @@
                           <tr>
                               <td>
                                   <small class="text-muted">
-                                    <a role="button" target="_blank" class="btn btn-light btn-sm" href="{{ schedule[title]['trailer'] }}">watch trailer</a>
+                                    <a role="button" target="_blank" class="btn btn-light btn-sm" href="{{ upcoming_movie['trailer'] }}">watch trailer</a>
+                                  </small>
+                              </td>
+                            </tr>
+                        </table>
+                      </div>
+                    </div>
+                    <div class="col-sm-10">
+                      <h3>{{ upcoming_movie['title'] }}</h3>
+                      <p class="card-text">{{ upcoming_movie['plot'][0]|truncate(210) }}</p>
+                      <span class="badge badge-danger">Realease date: {{ upcoming_movie['time'] }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- END OF CARD BODY -->
+                </div>
+                <!-- END OF CARD -->
+              </div>
+              <!-- END OF COL-MD-12 -->
+            
+            {% endfor %}
+          {% endif %}
+          <div class="col-md-12">
+              <h2>Playing right now:</h2>
+          </div>
+          {% if schedule['playing'] %}
+            {% for title in schedule['playing'] %}
+            <div class="col-md-12">
+              <div class="card mb-2 shadow-sm">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-sm-2">
+                      <img class="bd-placeholder-img card-img-top" style="width: 100px" src="{{ schedule['playing'][title]['cover url'] }}"
+                        focusable="false" role="img" aria-label="Placeholder: {{ schedule['playing'][title]['canonical title'] }}">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <table>
+                          {% if schedule['playing'][title]['runtimes'] %}
+                            <tr>
+                              <td>
+                                  <small class="text-muted"> IMDB rating is {{ schedule['playing'][title]['rating'] }}</small>
+                              </td>
+                            </tr>
+                          
+                            <tr>
+                              <td>
+                                  <small class="text-muted"> Runtime:
+                                    {{ (schedule['playing'][title]['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
+                                    {{ (schedule['playing'][title]['runtimes'][0]|int % 60)|string + 'm' }}
+                                  </small>
+                              </td>
+                            </tr>
+                          {% endif %}
+                          <tr>
+                              <td>
+                                  <small class="text-muted">
+                                    <a role="button" target="_blank" class="btn btn-light btn-sm" href="{{ schedule['playing'][title]['trailer'] }}">watch trailer</a>
                                   </small>
                               </td>
                             </tr>
@@ -87,14 +145,14 @@
                     </div>
                     <div class="col-sm-10">
                       <h3>{{ title }}</h3>
-                      <p class="card-text">{{ schedule[title]['plot'][0]|truncate(210) }}</p>
+                      <p class="card-text">{{ schedule['playing'][title]['plot'][0]|truncate(210) }}</p>
                       <!-- schedule -->
                       <div class="row">
                         <div class="col-sm-6">
                           <h4>Multiplex</h4>
-                          {% if 'Multiplex' in schedule[title] %}
+                          {% if 'Multiplex' in schedule['playing'][title] %}
                             <table>
-                              {% for time_str in schedule[title]['Multiplex']['schedule'] %}
+                              {% for time_str in schedule['playing'][title]['Multiplex']['schedule'] %}
                                 <tr>
                                   <td>
                                     <span class="badge badge-primary">{{ time_str }}</span>
@@ -108,9 +166,9 @@
                         </div>
                         <div class="col-sm-6">
                           <h4>Loteanu</h4>
-                          {% if 'Loteanu' in schedule[title] %}
+                          {% if 'Loteanu' in schedule['playing'][title] %}
                             <table>
-                              {% for time_str in schedule[title]['Multiplex']['schedule'] %}
+                              {% for time_str in schedule['playing'][title]['Multiplex']['schedule'] %}
                                 <tr>
                                   <td>
                                     <span class="badge badge-primary">{{ time_str }}</span>
