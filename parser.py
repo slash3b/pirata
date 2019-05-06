@@ -1,107 +1,59 @@
 import requests
+import re
 from datetime import datetime
 from datetime import timedelta
-import re
-import json
-import urllib
 from bs4 import BeautifulSoup
 from imdb import IMDb
-from pprint import pprint
+from sqlite3 import connect
+from parser import upcoming, playing
 
-base = datetime.today()
-dates = [base + timedelta(days=x) for x in range(0,6)]
+cn = connect('pirata.db')
 
 # coming soon section
-patria_url = 'http://patria.md'
+patria_url = 'http://patria.md/?mode=normal'
 response = requests.get(patria_url)
 soup = BeautifulSoup(response.text, 'html.parser')
-
-result = {}
-result['upcoming'] = []
-result['playing'] = {}
 
 upcoming_section = soup.find('ul', 'coming-soon')
 for item in upcoming_section.find_all('li'):
     title = item.find('a', 'title').contents[0]
     if ("EN" in title):
+
         movie_title = title.split('(')[0].rstrip()
-        time = item.span.contents[0] 
-        result['upcoming'].append({
-            'title': movie_title,
-            'time': time,
-        })
+        premiere_date = item.span.contents[0] 
+        upcoming.register(cn, movie_title, premiere_date)
 
+# playing now section
+base = datetime.today()
+dates = [base + timedelta(days=x) for x in range(0,6)]
 
-# now playing section
-cinema_ids = {"Multiplex":24, "Loteanu":36}
+# delete future schedules. Safest way to make sure we have correct schedule
+cn.cursor().execute('DELETE FROM schedule WHERE datetime >=?', (datetime.today().strftime('%Y-%m-%d'),))
+cn.commit()
 
-for cinema_name in cinema_ids:
-    for date in dates:
-        movieDay = date.strftime("%d-%m-%Y")
-        url = "http://patria.md/beta/wp-admin/admin-ajax.php?date=" + movieDay + "&cinema=" + str(cinema_ids[cinema_name]) + "&action=flotheme_load_movies_scheduler"
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        moviesHtml = soup.find('div', 'sidebar-scheduler-movies') 
-        if moviesHtml:
-            movies = []
-            for link in soup.find_all("div", "title"):
-                title = link.a.contents[0]
-                if ("EN" in title):
-                    movie_title = title.split('(')[0].rstrip()
-                    if movie_title not in result['playing']:
-                        result['playing'][movie_title] = {}
-                    if cinema_name not in result['playing'][movie_title]:
-                        result['playing'][movie_title][cinema_name] = {}
-                        result['playing'][movie_title][cinema_name]['schedule'] = []
-                    time = link.parent.find("div", "sessions").span.contents[0]
-                    result['playing'][movie_title][cinema_name]['schedule'].append(
-                        datetime.strptime(movieDay + ' ' + time, '%d-%m-%Y %H:%M').strftime('%b %d, %A at %H:%M')
-                    )
+for date in dates:
+    movieDay = date.strftime("%d-%m-%Y")
+    # cinema 24 stands for Mall cinema
+    url = "http://patria.md/beta/wp-admin/admin-ajax.php?date=" + movieDay + "&cinema=24&action=flotheme_load_movies_scheduler"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    moviesHtml = soup.find('div', 'sidebar-scheduler-movies') 
+    if moviesHtml:
+        for link in soup.find_all("div", "title"):
+            title = link.a.contents[0]
+            if ("EN" in title):
+                # skip new lines and return only html elements
+                schedule_content =  [x for x in link.parent.find("div", "sessions").children if x != '\n']
+                schedule = []
+                for item in schedule_content:
+                    if item:
+                        # get time string
+                        time = item.contents[0].strip('/ ')
+                        date = datetime.strptime(movieDay + ' ' + time, '%d-%m-%Y %H:%M')
+                        schedule.append(date)
+                movie_title = title.split('(')[0].rstrip()
+                playing.register(cn, movie_title, schedule)
 
-ia = IMDb()
-
-imdb_keys = ['cover url', 'rating', 'canonical title', 'plot', 'synopsis', 'long imdb title', 'genres', 'runtimes']
-
-for k, v in enumerate(result['upcoming']):
-    clean_name = re.sub('(2D|3D)', '', v['title'])
-    movie_data = ia.search_movie(clean_name)[0]
-    ia.update(movie_data)
-
-    for key in imdb_keys:
-        if key in movie_data:
-            result['upcoming'][0][key] = movie_data[key]
-
-    # now fill in youtube data
-    query_string = urllib.parse.urlencode({"search_query" : movie_data['canonical title']+' trailer'})
-    html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
-    soup = BeautifulSoup(html_content.read().decode(), 'html.parser')
-    trailer = 'http://www.youtube.com' + soup.find('div', 'yt-lockup yt-lockup-tile yt-lockup-video vve-check clearfix').find('a')['href']
-    result['upcoming'][k]['trailer'] = trailer
-    
-
-for name in result['playing'].keys():
-    clean_name = re.sub('(2D|3D)', '', name)
-    movie_data = ia.search_movie(clean_name)[0]
-    ia.update(movie_data)
-
-    for key in imdb_keys:
-        if key in movie_data:
-            result['playing'][name][key] = movie_data[key]
-
-    # now fill in youtube data
-    query_string = urllib.parse.urlencode({"search_query" : movie_data['canonical title']+' trailer'})
-    html_content = urllib.request.urlopen('http://www.youtube.com/results?' + query_string)
-    soup = BeautifulSoup(html_content.read().decode(), 'html.parser')
-    trailer = 'http://www.youtube.com' + soup.find('div', 'yt-lockup yt-lockup-tile yt-lockup-video vve-check clearfix').find('a')['href']
-    result['playing'][name]['trailer'] = trailer
-
-handle = open('result.json', 'w')
-handle.write('{}')
-
-if result:
-    try:
-        handle = open('result.json', 'w')
-        handle.write(json.dumps(result))
-    finally:
-        handle.close()
+# terminate connection
+cn.close()
 
