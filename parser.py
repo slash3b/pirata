@@ -59,3 +59,4 @@ for date in dates:
 # terminate connection
 cn.close()
 
+print("All is good!")
