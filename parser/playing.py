@@ -1,7 +1,7 @@
 from parser import film
 from datetime import datetime
 
-def register(cn, movie_title, schedule):
+def register(cn, movie_title, cinema_id, schedule):
     cursor = cn.cursor()
     cursor.execute('SELECT * FROM films WHERE title=?', (movie_title,))
     if cursor.fetchone() is None:
@@ -12,5 +12,5 @@ def register(cn, movie_title, schedule):
     film_id = record[0]
     
     for time in schedule:
-        cursor.execute('INSERT INTO schedule(film_id, datetime) VALUES(?, ?)', (film_id, time))
+        cursor.execute('INSERT INTO schedule(film_id, datetime, location_id) VALUES(?, ?, ?)', (film_id, time, cinema_id))
     cn.commit()
