@@ -61,3 +61,6 @@ def index():
 
     return render_template('index.html', upcoming=upcoming, playing=playing)
 
+if __name__ == "__main__":
+        pirata.run()
+
