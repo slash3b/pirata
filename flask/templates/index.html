@@ -3,8 +3,7 @@
 
 <head>
   <meta name="description" content="This website reflects content of patria.md. 
-    pirata.md provides movies schedule in Chishinau cinema. 
-    Original side is ugly, cumbersome and full of advertising. 
+    pirata.md provides movies schedule in Chishinau cinema theaters
     Here you get all the info you need in one place.">
   <meta name="author" content="Ilya Tribusean">
   <meta name="robots" content="index, follow">
@@ -40,8 +39,8 @@
 
     <section class="jumbotron text-left">
       <div class="container">
-        <h1 class="jumbotron-heading">Mirror for Multiplex Patria</h1>
-        <p class="lead text-muted text-left">Simple schedule for films in English that are playing on right now in Patria Multiplex, Chishinau.
+        <h1 class="jumbotron-heading">Mirror for patria.md</h1>
+        <p class="lead text-muted text-left">Simple schedule for films in English that are playing on right now in Patria Chishinau.
         <br> mirrored website - patria.md</p>
       </div>
     </section>
@@ -149,12 +148,20 @@
                       <div class="row">
                         <div class="col-sm-6">
                             <table>
-                              {% for time in movie['schedule'] %}
-                                <tr>
-                                  <td>
-                                    <span class="badge badge-primary">{{ time }}</span>
-                                  </td>
-                                </tr>
+                              {% for theater in movie['schedule'] %}
+                                {% if theater == 24 %}
+                                    <tr><td>Multiplex</td></tr>
+                                {% endif %} 
+                                {% if theater == 36 %}
+                                    <tr><td>Loteanu</td></tr>
+                                {% endif %} 
+                                {% for time in movie['schedule'][theater] %}
+                                    <tr>
+                                      <td>
+                                        <span class="badge badge-primary">{{ time }}</span>
+                                      </td>
+                                    </tr>
+                                {% endfor %}
                               {% endfor %}
                             </table>
                         </div>

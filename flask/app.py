@@ -38,10 +38,12 @@ def index():
             'meta' : json.loads(item[1]),
             'title' : item[2]
         })
-
-    cur.execute('SELECT film_id, datetime from schedule WHERE datetime >= ?', [datetime.today().strftime('%Y-%m-%d')])
+    
+    # define what is playing right now by checking schedule
+    cur.execute('SELECT film_id, location_id, datetime FROM schedule WHERE datetime >= ? ORDER BY location_id, datetime', [datetime.today().strftime('%Y-%m-%d')])
     schedule_times = cur.fetchall()
 
+    # find film ids
     film_ids = set()
     [film_ids.add(x[0]) for x in schedule_times]
 
@@ -50,9 +52,19 @@ def index():
 
     films = cur.fetchall()
     playing = []
+
     for film in films:
         id = film[0] 
-        times = [x[1] for x in (filter(lambda x: x[0] == id, schedule_times))]
+        times = {}
+        # filter playing times for this film only
+        film_times = [x[1:] for x in (filter(lambda x: x[0] == id, schedule_times))]
+
+        # separate by patria branches 24 and 36
+        for x in film_times:
+            if x[0] not in times:
+                times[x[0]] = []
+            times[x[0]].append(x[1])
+
         playing.append({
             'meta': json.loads(film[2]),
             'title': film[1],
