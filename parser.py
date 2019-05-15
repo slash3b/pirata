@@ -10,17 +10,22 @@ from parser import upcoming, playing
 cn = connect('pirata.db')
 
 # coming soon section
-patria_url = 'http://patria.md/?mode=normal'
+patria_url = 'http://patria.md/movies'
 response = requests.get(patria_url)
 soup = BeautifulSoup(response.text, 'html.parser')
 
-upcoming_section = soup.find('ul', 'coming-soon')
-for item in upcoming_section.find_all('li'):
-    title = item.find('a', 'title').contents[0]
-    if ("EN" in title):
-
-        movie_title = title.split('(')[0].rstrip()
-        premiere_date = item.span.contents[0] 
+# since html markup is a piece of shit like the rest of the patria we take all the items from the second 'movies-page' div
+upcoming_movies = soup.find_all('div', 'page movies-page')[1].find_all('div', 'movies-item')
+for item in upcoming_movies:
+    attrs = item.find('a').attrs
+    if ("EN" in attrs['title']):
+        movie_title = attrs['title'].split('(')[0].rstrip()
+        movie_url = attrs['href']
+        # in order to get premiere date we have to visit each page, that sucks
+        response = requests.get(movie_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        # todo: way to improve is to make request and find out if we already have that film in the database ?
+        premiere_date = soup.find_all('div', class_='premiere')[-1].contents[1] 
         upcoming.register(cn, movie_title, premiere_date)
 
 # playing now section

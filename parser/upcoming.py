@@ -14,7 +14,7 @@ def register(cn, movie_title, premiere_date):
 
     # record id
     film_id = record[0]
-    premiere_date = datetime.strptime(premiere_date, '%B %d, %Y').date()
+    premiere_date = datetime.strptime(premiere_date, '%d.%m.%Y').date()
 
     cursor.execute('SELECT * FROM upcoming WHERE film_id=?', (film_id,))
     if cursor.fetchone() is None:
