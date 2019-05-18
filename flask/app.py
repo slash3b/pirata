@@ -19,6 +19,12 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+@pirata.after_request
+def add_header(response):
+    response.cache_control.max_age = 300
+    response.cache_control.public = True
+    return response
+
 @pirata.route('/')
 def index():
     cn = get_db()
