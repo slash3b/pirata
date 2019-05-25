@@ -70,14 +70,16 @@
                                   </td>
                                 </tr>
                             {% endif %}
-                            <tr>
-                              <td>
-                                  <small class="text-muted"> Runtime:
-                                    {{ (movie['meta']['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
-                                    {{ (movie['meta']['runtimes'][0]|int % 60)|string + 'm' }}
-                                  </small>
-                              </td>
-                            </tr>
+                            {% if movie['meta']['rating'] %}
+                                <tr>
+                                  <td>
+                                      <small class="text-muted"> Runtime:
+                                        {{ (movie['meta']['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
+                                        {{ (movie['meta']['runtimes'][0]|int % 60)|string + 'm' }}
+                                      </small>
+                                  </td>
+                                </tr>
+                            {% endif %}
                           <tr>
                               <td>
                                   <small class="text-muted">
@@ -123,15 +125,17 @@
                                   <small class="text-muted"> IMDB rating is {{ movie['meta']['rating'] }}</small>
                               </td>
                             </tr>
-                         {% endif %} 
-                          <tr>
-                              <td>
-                                  <small class="text-muted"> Runtime:
-                                    {{ (movie['meta']['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
-                                    {{ (movie['meta']['runtimes'][0]|int % 60)|string + 'm' }}
-                                  </small>
-                              </td>
-                          </tr>
+                          {% endif %} 
+                          {% if movie['meta']['rating'] %}
+                              <tr>
+                                  <td>
+                                      <small class="text-muted"> Runtime:
+                                        {{ (movie['meta']['runtimes'][0]|int / 60)|round(0, 'floor')|int|string + 'h' }} 
+                                        {{ (movie['meta']['runtimes'][0]|int % 60)|string + 'm' }}
+                                      </small>
+                                  </td>
+                              </tr>
+                          {% endif %} 
                           <tr>
                               <td>
                                   <small class="text-muted">
