@@ -1,4 +1,4 @@
-# pirata
+### pirata ![alt text](https://pirata.md/static/favicon.ico)
 
 name pirata is an anagramm for patria which is romanian word and can be translated as motherland
 
