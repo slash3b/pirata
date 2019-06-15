@@ -41,7 +41,7 @@ for date in dates:
     # cinema 24 stands for Mall cinema
     # cinema 36 stands for Loteanu cinema
     for cinema_id in ['24', '36']:
-        url = "http://patria.md/beta/wp-admin/admin-ajax.php?date=" + movieDay + "&cinema=" + cinema_id + "&action=flotheme_load_movies_scheduler"
+        url = f'http://patria.md/beta/wp-admin/admin-ajax.php?date={movieDay}&cinema={cinema_id}&action=flotheme_load_movies_scheduler'
         response = requests.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
         moviesHtml = soup.find('div', 'sidebar-scheduler-movies') 
