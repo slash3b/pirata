@@ -103,3 +103,6 @@ result.json
 .vscode
 pirata.db
 pirata
+
+
+deploy.sh
