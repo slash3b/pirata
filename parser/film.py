@@ -9,18 +9,25 @@ def register(cn, title: str):
     cursor = cn.cursor()
     meta = {}
     imdb = IMDb()
-    movie = imdb.search_movie(_clean_title(title))[0]
+    trimmed_title = _clean_title(title)
 
-    imdb.update(movie)
-    infoset = ['cover url', 'rating', 'title', 'plot', 'long imdb title', 'genres', 'runtimes']
+    imdb_search_result = imdb.search_movie(trimmed_title)
 
-    # update take specific object instances
-    # find out how to do it properly
-    for info in infoset:
-        meta[info] = movie.get(info)
+    # some films could not be found on IMDB, for instance some new Romanian film
+    if imdb_search_result:
+
+        movie = imdb_search_result[0] 
+
+        imdb.update(movie)
+        infoset = ['cover url', 'rating', 'title', 'plot', 'long imdb title', 'genres', 'runtimes']
+
+        # update take specific object instances
+        # find out how to do it properly
+        for info in infoset:
+            meta[info] = movie.get(info)
 
     # now fill in youtube data
-    meta['trailer'] = _get_yt_trailer(meta['title'])
+    meta['trailer'] = _get_yt_trailer(meta['title'] if 'title' in meta else trimmed_title)
 
     now = datetime.now().isoformat()
     data = (title, json.dumps(meta), now)
@@ -41,6 +48,6 @@ def _get_yt_trailer(title: str) -> str:
 
 def _clean_title(title: str) -> str:
     #get rid of 2D and 3D
-    clean_dimension = re.sub('(2D|3D)', '', title)
-    return clean_dimension.split('(')[0].rstrip()
+    trimmed_title = re.sub('(2D|3D)', '', title)
+    return trimmed_title.split('(')[0].rstrip()
 
