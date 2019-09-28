@@ -26,8 +26,8 @@ def register(cn, title: str):
         for info in infoset:
             meta[info] = movie.get(info)
 
-    # now fill in youtube data
-    meta['trailer'] = _get_yt_trailer(meta['title'] if 'title' in meta else trimmed_title)
+        # now fill in youtube data
+        meta['trailer'] = _get_yt_trailer(meta['title'] if 'title' in meta else trimmed_title)
 
     now = datetime.now().isoformat()
     data = (title, json.dumps(meta), now)
