@@ -6,7 +6,6 @@ def register(cn, movie_title, cinema_id, schedule):
     cursor.execute('SELECT * FROM films WHERE title=?', (movie_title,))
     if cursor.fetchone() is None:
         film.register(cn, movie_title)
-        print(f"New playing movie was added: {movie_title}") 
 
     cursor.execute('SELECT * FROM films WHERE title=?', (movie_title,))
     record = cursor.fetchone()

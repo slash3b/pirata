@@ -5,7 +5,7 @@ from datetime import timedelta
 from bs4 import BeautifulSoup
 from imdb import IMDb
 from sqlite3 import connect
-from parser import upcoming, playing
+from parser import upcoming, playing, mail
 
 cn = connect('pirata.db')
 
@@ -60,6 +60,17 @@ for date in dates:
                             schedule.append(date)
                     movie_title = title.split('(')[0].rstrip()
                     playing.register(cn, movie_title, cinema_id, schedule)
+
+
+# my god, and this human have "ambitions"! Horrible, just horrible
+result = cn.cursor().execute('select title from films where date(register_date) = ?', (datetime.today().strftime('%Y-%m-%d'),))
+
+films = ''
+for item in result.fetchall():
+    films += item[0] + ', '
+
+if(len(films)):
+    mail.send_mail(films)
 
 # terminate connection
 cn.close()
