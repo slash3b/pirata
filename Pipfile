@@ -10,6 +10,7 @@ requests = "*"
 "bs4" = "*"
 flask = "*"
 imdbpy = "*"
+mailjet-rest = "*"
 
 [requires]
 python_version = "3.7"
