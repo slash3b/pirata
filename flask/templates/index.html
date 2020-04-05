@@ -65,7 +65,7 @@
                       {% endif %}
                       <div class="d-flex justify-content-between align-items-center">
                         <table>
-                            {% if 'rating' in movie['meta'] %}
+                            {% if 'rating' in movie['meta'] and movie['meta']['rating'] %}
                                 <tr>
                                   <td>
                                       <small class="text-muted"> IMDB rating is {{ movie['meta']['rating'] }}</small>
@@ -102,7 +102,7 @@
                       {% else %}
                         <p class="card-text"> No description, sorry</p>
                       {% endif %}
-                      <span class="badge badge-danger">Realease date: {{ movie['premiere_date'] }}</span>
+                      <span class="badge badge-danger">Release: {{ movie['premiere_date'] }}</span>
                       </div>
                     </div>
                   </div>
