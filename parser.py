@@ -61,7 +61,6 @@ for date in dates:
 
                 playing.register(cn, movie_title, cinema_id, schedule)
 
-# my god, and this human have "ambitions"! Horrible, just horrible
 result = cn.cursor().execute('select title from films where date(register_date) = ?', (datetime.today().strftime('%Y-%m-%d'),))
 
 films = ''
