@@ -1,5 +1,6 @@
 import requests
 import re
+import sys
 from datetime import datetime
 from datetime import timedelta
 from bs4 import BeautifulSoup
@@ -9,6 +10,30 @@ from parser import upcoming, playing, mail
 
 cn = connect('pirata.db')
 
+# initialize client with english lang preferency
+client = requests.Session()
+client.get('https://patria.md/lang/en')
+
+# coming soon section
+url = f'https://patria.md/films'
+response = client.get(url)
+soup = BeautifulSoup(response.text, 'html.parser')
+movies = soup.find('div', attrs={'id':'afisha2_'}).children
+
+for movie in movies:
+    movie_title = movie.find('div', class_='name')
+    if movie_title == None:
+        continue
+    movie_title = movie_title.contents[0]
+    if ('(EN)' in movie_title):
+        # grab movie title in english
+        movie_title = movie_title.split('(')[0].rstrip()
+
+        # premiere_date = datetime.strptime(premiere_date, '%d.%m.%Y').date() 
+        date = movie.find('div', class_='premier')
+        premiere_date = date.contents[0].split(' ')[1]
+        upcoming.register(cn, movie_title, premiere_date)
+
 # playing now section
 base = datetime.today()
 dates = [base + timedelta(days=x) for x in range(0,6)]
@@ -16,9 +41,6 @@ dates = [base + timedelta(days=x) for x in range(0,6)]
 # delete future schedules. Safest way to make sure we have correct schedule
 cn.cursor().execute('DELETE FROM schedule WHERE datetime >=?', (datetime.today().strftime('%Y-%m-%d'),))
 cn.commit()
-
-client = requests.Session()
-client.get('https://patria.md/lang/en')
 
 cinema_map = {
        'Multiplex' : 24, 
