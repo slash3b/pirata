@@ -11,6 +11,7 @@ requests = "*"
 flask = "*"
 imdbpy = "*"
 mailjet-rest = "*"
+markdown = "*"
 
 [requires]
 python_version = "3.7"

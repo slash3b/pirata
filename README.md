@@ -15,3 +15,9 @@ why? because the original site is ugly, slow and not user friendly
 - do `export FLASK_ENV=development`
 - then `flask run`
 
+Command to convert "API documentation" to html is
+
+```bash
+./to_md.py templates/api.md -o templates/api.html
+```
+

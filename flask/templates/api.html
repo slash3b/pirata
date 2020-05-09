@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <head>
+        <title> pirata.md API </title>
+        <meta name="description" content="API for pirata.md/patria.md">
+        <link rel="shortcut icon" href="/static/favicon.ico">
+    </head>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        code, pre {
+            font-family: monospace;
+        }
+        h1 code,
+        h2 code,
+        h3 code,
+        h4 code,
+        h5 code,
+        h6 code {
+            font-size: inherit;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<p>Humble pirata.md API just for fun!</p>
+<h2>Upcoming movies endpoint:</h2>
+<p><code>[GET] /api/upcoming</code> — a list of soon to be played movies</p>
+<p><strong>Output example:</strong></p>
+<pre><code>[
+  {
+    &quot;meta&quot;: {
+      &quot;cover url&quot;: &quot;https://m.media-amazon.com/images/M/MV5BZGRlNTY3NGYtM2YzZS00N2YyLTg0ZDYtNmY2ZDg2NDM3N2JlXkEyXkFqcGdeQXVyNTI4MzE4MDU@._V1_SY150_CR0,0,101,150_.jpg&quot;,
+      &quot;genres&quot;: [
+        &quot;Action&quot;,
+        &quot;Adventure&quot;,
+        &quot;Sci-Fi&quot;
+      ],
+      &quot;long imdb title&quot;: &quot;Black Widow (2020)&quot;,
+      &quot;plot&quot;: [
+        &quot;A film about Natasha Romanoff in her quests between the films Civil War and Infinity War.&quot;
+      ],
+      &quot;rating&quot;: null,
+      &quot;runtimes&quot;: null,
+      &quot;title&quot;: &quot;Black Widow&quot;,
+      &quot;trailer&quot;: &quot;http://www.youtube.com/watch?v=RxAtuMu_ph4&quot;
+    },
+    &quot;premiere_date&quot;: &quot;2020-11-05&quot;,
+    &quot;title&quot;: &quot;Black Widow&quot;
+  }
+]
+</code></pre>
+
+<h2>Playing movies endpoint:</h2>
+<p><code>[GET] /api/playing</code> — return all playing movies right now in json format<br>
+<strong>Output example:</strong> </p>
+<pre><code>[
+  {
+    &quot;meta&quot;: {
+      &quot;cover url&quot;: &quot;https://m.media-amazon.com/images/M/MV5BOTVjMmFiMDUtOWQ4My00YzhmLWE3MzEtODM1NDFjMWEwZTRkXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SY150_CR0,0,101,150_.jpg&quot;, 
+      &quot;genres&quot;: [
+        &quot;Action&quot;, 
+        &quot;Adventure&quot;, 
+        &quot;Comedy&quot;, 
+        &quot;Fantasy&quot;
+      ], 
+      &quot;long imdb title&quot;: &quot;Jumanji: The Next Level (2019)&quot;, 
+      &quot;plot&quot;: [
+        &quot;In Jumanji: The Next Level, the gang is back but the game has changed. As they return to rescue one of their own, the players will have to brave parts unknown from arid deserts to snowy mountains, to escape the world's most dangerous game.::Sony Pictures Entertainment&quot;, 
+        &quot;The gang is back but the game has changed. As they return to Jumanji to rescue one of their own, they discover that nothing is as they expect. The players will have to brave parts unknown and unexplored, from the arid deserts to the snowy mountains, in order to escape the world's most dangerous game.&quot;, 
+        &quot;\&quot;When Spencer goes back into the fantastical world of Jumanji, pals Martha, Fridge and Bethany re-enter the game to bring him home. But everything about Jumanji is about to change, as they soon discover more obstacles and more danger to overcome.::krmanirethnam&quot;
+      ], 
+      &quot;rating&quot;: 7.0, 
+      &quot;runtimes&quot;: [
+        &quot;123&quot;
+      ], 
+      &quot;title&quot;: &quot;Jumanji: The Next Level&quot;, 
+      &quot;trailer&quot;: &quot;http://www.youtube.com/watch?v=rBxcF-r9Ibs&quot;
+    }, 
+    &quot;schedule&quot;: {
+      &quot;24&quot;: [
+        &quot;2021-12-12 19:30:00&quot;, 
+        &quot;2021-12-12 19:30:00&quot;, 
+        &quot;2021-12-12 19:30:00&quot;, 
+        &quot;2021-12-12 19:30:00&quot;, 
+        &quot;2021-12-12 19:30:00&quot;, 
+        &quot;2021-12-12 19:30:00&quot;
+      ]
+    }, 
+    &quot;title&quot;: &quot;Jumanji: The next level&quot;
+  }
+]
+</code></pre>
+</div>
+</body>
+</html>
