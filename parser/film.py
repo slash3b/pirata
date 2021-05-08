@@ -27,7 +27,7 @@ def register(cn, title: str):
             meta[info] = movie.get(info)
 
         # now fill in youtube data
-        meta['trailer'] = _get_yt_trailer(meta['title'] if 'title' in meta else trimmed_title)
+        meta['trailer'] = ""
 
     now = datetime.now().isoformat()
     data = (title, json.dumps(meta), now)
@@ -38,10 +38,10 @@ def register(cn, title: str):
     return meta
 
 def _get_yt_trailer(title: str) -> str:
-    
     query_string = urllib.parse.urlencode({"search_query" : f'{title} trailer english'})
     html_content = urllib.request.urlopen(f'http://www.youtube.com/results?{query_string}')
     soup = BeautifulSoup(html_content.read().decode(), 'html.parser')
+
     trailer = 'http://www.youtube.com' + soup.find('div', 'yt-lockup yt-lockup-tile yt-lockup-video vve-check clearfix').find('a')['href']
 
     return trailer

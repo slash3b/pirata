@@ -8,89 +8,51 @@ from imdb import IMDb
 from sqlite3 import connect
 from parser import upcoming, playing, mail
 
-cn = connect('pirata.db')
+cn = connect('pirata_prod.db')
 
 # initialize client with english lang preferency
 client = requests.Session()
-client.get('https://patria.md/lang/en')
+client.get('https://cineplex.md/lang/en')
 
-# coming soon section
-url = f'https://patria.md/films'
+url = f'https://cineplex.md/films'
 response = client.get(url)
 soup = BeautifulSoup(response.text, 'html.parser')
-movies = soup.find('div', attrs={'id':'afisha2_'}).children
 
-for movie in movies:
-    movie_title = movie.find('div', class_='name')
+all_movies = soup.find_all('div', attrs={'class':'movies_fimls_item'})
+movie_titles_to_email = ''
+
+for movie in all_movies:
+    movie_lang = movie.find('span', class_='overlay__lang')
+    if movie_lang == None:
+        continue
+    movie_lang = movie_lang.string
+
+    movie_title = movie.find('h3', class_='overlay__title')
     if movie_title == None:
         continue
-    movie_title = movie_title.contents[0]
-    if ('(EN)' in movie_title):
-        # grab movie title in english
-        movie_title = movie_title.split('(')[0].rstrip()
+    movie_title = movie_title.string
 
-        # premiere_date = datetime.strptime(premiere_date, '%d.%m.%Y').date() 
-        date = movie.find('div', class_='premier')
-        premiere_date = date.contents[0].split(' ')[1]
-        upcoming.register(cn, movie_title, premiere_date)
+    if ('(EN)' in movie_lang.string):
+        upcoming_movie_response = client.get(movie["data-href"])
+        upcoming_html_soup = BeautifulSoup(upcoming_movie_response.text, 'html.parser')
+        movie_attributes = upcoming_html_soup.find_all('li', attrs={'class':'film_movies_info_item'})
 
-# playing now section
-base = datetime.today()
-dates = [base + timedelta(days=x) for x in range(0,6)]
+        print(movie_attributes)
+        for attribute in movie_attributes:
+            if 'Premiere date' in attribute.find('h5').string:
+                premiere_date = attribute.find('p').string
 
-# delete future schedules. Safest way to make sure we have correct schedule
-cn.cursor().execute('DELETE FROM schedule WHERE datetime >=?', (datetime.today().strftime('%Y-%m-%d'),))
-cn.commit()
+                premiere_date = datetime.strptime(premiere_date, '%d.%m.%Y').date() 
 
-cinema_map = {
-       'Multiplex' : 24, 
-       'Loteanu' : 36
-}
 
-for date in dates:
-    # parse path for one day
-    # e.g. https://patria.md/films?c_date=2019-12-16
-    movieDay = date.strftime('%Y-%m-%d')
+                if not upcoming.is_registered(cn, movie_title):
 
-    url = f'https://patria.md/films?c_date={movieDay}'
-    response = client.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+                    upcoming.register(cn, movie_title, premiere_date)
+                    movie_titles_to_email += movie_title + ', '
+                break
 
-    movies = soup.find('div', attrs={'id':'afisha1_'}).children
-
-    for movie in movies:
-        # exclude the fucking banner
-        movie_title = movie.find('div', class_='name')
-        if movie_title == None:
-            continue
-        movie_title = movie_title.contents[0]
-        if ('(EN)' in movie_title):
-            # MOVIE TITLE
-            movie_title = movie_title.split('(')[0].rstrip()
-
-            for cinema in movie.find_all('div', class_='h4'):
-                # CINEMA ID
-                cinema_id = cinema_map[cinema.contents[0].rstrip(':')]
-                # times for this particular cinema 
-
-                # find here all schedules
-                schedule = []
-                for times in cinema.find_next().find_all('a'):
-                    # e.g. 16:40
-                    time = times.find('span').contents[0]
-                    date = datetime.strptime(movieDay + ' ' + time, '%Y-%m-%d %H:%M')
-                    schedule.append(date)
-
-                playing.register(cn, movie_title, cinema_id, schedule)
-
-result = cn.cursor().execute('select title from films where date(register_date) = ?', (datetime.today().strftime('%Y-%m-%d'),))
-
-films = ''
-for item in result.fetchall():
-    films += item[0] + ', '
-
-if(len(films)):
-    mail.send_mail(films)
+if(len(movie_titles_to_email)):
+    mail.send_mail(movie_titles_to_email)
 
 # terminate connection
 cn.close()

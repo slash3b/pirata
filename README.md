@@ -21,3 +21,8 @@ Command to convert "API documentation" to html is
 ./to_md.py templates/api.md -o templates/api.html
 ```
 
+##### build parser image
+docker build . -t pirata:latest
+
+##### run dev image
+docker run --volume (pwd):/pirata --rm -it pirata /bin/sh

@@ -1,4 +1,5 @@
 - share button that forms link to the film
+- use https://newcss.net to re-style the website 
 - move whole website to http2.0 or even http3
 - improve speed using varnish ?
 - use sqlite as database ?
