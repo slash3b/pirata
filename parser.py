@@ -8,7 +8,7 @@ from imdb import IMDb
 from sqlite3 import connect
 from parser import upcoming, playing, mail
 
-cn = connect('pirata_prod.db')
+cn = connect('pirata.db')
 
 # initialize client with english lang preferency
 client = requests.Session()
@@ -37,7 +37,6 @@ for movie in all_movies:
         upcoming_html_soup = BeautifulSoup(upcoming_movie_response.text, 'html.parser')
         movie_attributes = upcoming_html_soup.find_all('li', attrs={'class':'film_movies_info_item'})
 
-        print(movie_attributes)
         for attribute in movie_attributes:
             if 'Premiere date' in attribute.find('h5').string:
                 premiere_date = attribute.find('p').string
