@@ -54,6 +54,6 @@ func main() {
 	mux.HandleFunc("/films", rateLimiterMiddleware(getFilms))
 
 	fmt.Println("starting localhost:8080")
-	log.Fatal(http.ListenAndServe("localhost:8000", mux))
+	log.Fatal(http.ListenAndServe("localhost:8080", mux))
 
 }
