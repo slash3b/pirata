@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,6 +11,12 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+//go:embed static/api/index.html
+var indexHtml []byte
+
+//go:embed openapi.json
+var openapiJson []byte
 
 func main() {
 	db, err := gorm.Open(sqlite.Open("../pirata.db"), &gorm.Config{})
@@ -53,7 +60,16 @@ func main() {
 
 	mux.HandleFunc("/films", rateLimiterMiddleware(getFilms))
 
-	fmt.Println("starting 0.0.0.0:8080")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", mux))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(indexHtml)
+	})
 
+	mux.HandleFunc("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(openapiJson)
+	})
+
+	fmt.Println("starting http://0.0.0.0:8080")
+	log.Fatal(http.ListenAndServe("0.0.0.0:8080", mux))
 }
