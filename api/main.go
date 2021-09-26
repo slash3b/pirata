@@ -2,12 +2,17 @@ package main
 
 import (
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/slash3b/pirata/api/model"
+	"github.com/slash3b/pirata/api/http/handlers"
+	"github.com/slash3b/pirata/api/http/middleware"
+
+	"github.com/slash3b/pirata/api/repository/repos"
+
+	"github.com/slash3b/pirata/api/repository"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -19,46 +24,23 @@ var indexHtml []byte
 var openapiJson []byte
 
 func main() {
-	db, err := gorm.Open(sqlite.Open("../pirata.db"), &gorm.Config{})
+	service, err := initRepoService()
 	if err != nil {
-		log.Fatalln("unable to connect to sqlite db", err)
+		log.Fatal("unable to initialize repositories ", err)
 	}
 
+	repository.RepoService = service
+
+	mux := initMux()
+
+	fmt.Println("starting http://0.0.0.0:8080")
+	log.Fatal(http.ListenAndServe("0.0.0.0:8080", mux))
+}
+
+func initMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	rateLimiterMiddleware := func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-
-		limitingBuffer := make(chan struct{}, 10)
-		return func(w http.ResponseWriter, r *http.Request) {
-
-			limitingBuffer <- struct{}{}
-			defer func() { <-limitingBuffer }()
-
-			f(w, r)
-		}
-	}
-
-	getFilms := func(w http.ResponseWriter, r *http.Request) {
-		var allFilms []model.Film
-
-		result := db.Order("register_date desc").Find(&allFilms)
-		if result.Error != nil {
-			panic("ooops")
-		}
-
-		fmt.Println("rows affected ", result.RowsAffected)
-
-		jsonResult, err := json.Marshal(allFilms)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			panic(err)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResult)
-	}
-
-	mux.HandleFunc("/films", rateLimiterMiddleware(getFilms))
+	mux.HandleFunc("/films", middleware.RateLimiter(10, handlers.Films))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -70,6 +52,16 @@ func main() {
 		w.Write(openapiJson)
 	})
 
-	fmt.Println("starting http://0.0.0.0:8080")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", mux))
+	return mux
+}
+
+func initRepoService() (*repository.Service, error) {
+	db, err := gorm.Open(sqlite.Open("../pirata.db"), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	filmsRepo := repos.NewFilmsRepository(db)
+
+	return repository.NewService(filmsRepo), nil
 }
