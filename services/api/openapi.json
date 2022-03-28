@@ -1,0 +1,71 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Pirata API",
+    "description": "Toy api that shows newly added english films in Cineplex movie theater [Moldova]",
+    "version": "0.1",
+    "license": {
+      "name": "CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)",
+      "url": "ageispolis.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://ageispolis:8080"
+    }
+  ],
+  "paths": {
+    "/films": {
+      "get": {
+        "tags": [
+          "Films"
+        ],
+        "summary": "Get all films in english",
+        "description": "Returns all films in english ever registered in cineplex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "500": {
+            "description": "Server side error"
+          }
+        }
+      }
+    },
+    "/film": {
+      "put": {
+        "summary": "add new film"
+      }
+    }
+  },
+  "security": [
+    {
+      "app_id": []
+    }
+  ],
+  "externalDocs": {
+    "description": "API Documentation",
+    "url": "http://ageispolis.com"
+  },
+  "components": {
+    "parameters": {
+      "q": {
+        "name": "q",
+        "in": "query",
+        "description": "**City name**. *Example: London*. You can call by city name, or by city name and country code. The API responds with a list of results that match a searching word. For the query value, type the city name and optionally the country code divided by a comma; use ISO 3166 country codes.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": null,
+    "securitySchemes": {
+      "app_id": {
+        "type": "apiKey",
+        "description": "API key to authorize requests. (If you don't have an API key, get one at https://openweathermap.org/. See https://idratherbewriting.com/learnapidoc/docapis_get_auth_keys.html for details.)",
+        "name": "appid",
+        "in": "query"
+      }
+    }
+  }
+}
