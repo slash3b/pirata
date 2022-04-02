@@ -1,14 +1,20 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"database/sql"
-	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
+	"scraper/dto"
 	"scraper/service"
 	"scraper/storage/repository"
 	"time"
+
+	"github.com/mailjet/mailjet-apiv3-go/v3"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -72,49 +78,63 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	allNewFilms, err := scraperService.GetAllFilms()
+	imdbService := service.NewIMDB(scraperClient)
+
+	allNewFilms, err := scraperService.GetAllFilms() // todo: better naming
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	emailFilms := []dto.EmailFilm{}
 	for _, v := range allNewFilms {
-		fmt.Printf("%#v \n", v)
+		emailFilms = append(emailFilms, dto.FromModel(v, imdbService.GetFilmData(v)))
 	}
 
-	/*
-		def register(cn, title: str):
-		    cursor = cn.cursor()
-		    meta = {}
-		    imdb = IMDb()
-		    trimmed_title = _clean_title(title)
+	// todo : create a static page where users might subscribe ?
+	// YES and unsubscribe also
 
-		    imdb_search_result = imdb.search_movie(trimmed_title)
+	// use static fs
+	tpl, err := template.ParseFiles("static/email.html")
+	if err != nil {
+		panic(err)
+	}
 
-		    # some films could not be found on IMDB, for instance some new Romanian film
-		    if imdb_search_result:
+	b := bytes.NewBufferString("")
+	wr := bufio.NewWriter(b)
 
-		        movie = imdb_search_result[0]
+	err = tpl.Execute(wr, emailFilms)
+	if err != nil {
+		panic(err)
+	}
 
-		        imdb.update(movie)
-		        infoset = ['cover url', 'rating', 'title', 'plot', 'long imdb title', 'genres', 'runtimes']
+	htmlOutput := b.String()
 
-		        # update take specific object instances
-		        # find out how to do it properly
-		        for info in infoset:
-		            meta[info] = movie.get(info)
+	mjPubK := os.Getenv("MJ_APIKEY_PUBLIC")
+	mjPrivK := os.Getenv("MJ_APIKEY_PRIVATE")
+	fromEmail := os.Getenv("FROM_EMAIL")
+	fromName := os.Getenv("FROM_NAME")
 
-		        # now fill in youtube data
-		        meta['trailer'] = ""
-	*/
+	mailjetClient := mailjet.NewMailjetClient(mjPubK, mjPrivK)
+	messagesInfo := []mailjet.InfoMessagesV31{
+		{
+			From: &mailjet.RecipientV31{
+				Email: fromEmail,
+				Name:  fromName,
+			},
+			To: &mailjet.RecipientsV31{
+				mailjet.RecipientV31{
+					Email: "slash3b@gmail.com",
+					Name:  "Ilya",
+				},
+			},
+			Subject:  "Yo! Pirata has found some new upcoming movies in cineplex cinema",
+			HTMLPart: htmlOutput,
+		},
+	}
 
-	/*
-		def _get_yt_trailer(title: str) -> str:
-		    query_string = urllib.parse.urlencode({"search_query" : f'{title} trailer english'})
-		    html_content = urllib.request.urlopen(f'http://www.youtube.com/results?{query_string}')
-		    soup = BeautifulSoup(html_content.read().decode(), 'html.parser')
-
-		    trailer = 'http://www.youtube.com' + soup.find('div', 'yt-lockup yt-lockup-tile yt-lockup-video vve-check clearfix').find('a')['href']
-
-		    return trailer
-	*/
+	messages := mailjet.MessagesV31{Info: messagesInfo}
+	_, err = mailjetClient.SendMailV31(&messages)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

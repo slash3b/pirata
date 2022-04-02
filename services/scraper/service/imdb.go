@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"scraper/dto"
 	"scraper/storage/model"
 	"strings"
 
@@ -29,13 +30,6 @@ func NewIMDB(httpClient *http.Client) *IMDB {
 	2. implement LRU cache in case movie was already searched for !
 
 */
-
-type IMDBData struct {
-	poster  string
-	plot    string
-	runtime string
-	genres  string
-}
 
 func (c *IMDB) search(title string) (soup.Root, error) {
 
@@ -86,9 +80,9 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 	return soup.HTMLParse(res), nil
 }
 
-func (c *IMDB) GetFilmData(film model.Film) IMDBData {
+func (c *IMDB) GetFilmData(film model.Film) dto.IMDBData {
 
-	var data IMDBData
+	var data dto.IMDBData
 
 	root, err := c.search(film.Title)
 	if err != nil {
@@ -104,7 +98,7 @@ func (c *IMDB) GetFilmData(film model.Film) IMDBData {
 
 			posterURL, ok := bb["src"]
 			if ok {
-				data.poster = posterURL
+				data.Poster = posterURL
 			}
 		}
 	}
@@ -114,7 +108,7 @@ func (c *IMDB) GetFilmData(film model.Film) IMDBData {
 	if plotElem.Error == nil {
 		plot := plotElem.Find("span")
 		if plot.Error == nil {
-			data.plot = plot.FullText()
+			data.Plot = plot.FullText()
 		}
 	}
 
@@ -130,7 +124,7 @@ func (c *IMDB) GetFilmData(film model.Film) IMDBData {
 					if strings.TrimSpace(strings.ToLower(techSpecName.Text())) == "runtime" {
 						content := v.Find("div")
 						if content.Error == nil {
-							data.runtime = content.FullText()
+							data.Runtime = content.FullText()
 							break
 						}
 					}
@@ -152,7 +146,7 @@ func (c *IMDB) GetFilmData(film model.Film) IMDBData {
 			}
 		}
 
-		data.genres = strings.Join(genreTags, ", ")
+		data.Genres = strings.Join(genreTags, ", ")
 	}
 
 	return data
