@@ -170,7 +170,6 @@ h1,h2,h3,h4,h5,h6{
 }
 
 body{
-	font-family: 'Josefin Sans', sans-serif;
 	font-weight: 400;
 	font-size: 15px;
 	line-height: 1.8;
@@ -180,7 +179,7 @@ body{
 a{
 	color: #448ef6;
 }
-
+///
 table{
 }
 /*LOGO*/
@@ -326,6 +325,11 @@ table{
 	margin-bottom: 0;
 }
 
+.meta_content {
+    text-transform: none;
+    color: black;
+}
+
 /*FOOTER*/
 
 .footer{
@@ -375,57 +379,59 @@ table{
             <tr>
                 <td class="bg_white email-section">
                     <div class="heading-section" style="text-align: center; padding: 0 30px;">
-                        <h2>New movies in cineplex! </h2>
+                        <h2>New movies in cineplex! 🍿</h2>
                     </div>
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td style="padding-bottom: 30px;">
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                    <td valign="middle" width="50%">
-                                        <img src="https://m.media-amazon.com/images/M/MV5BMDdmMTBiNTYtMDIzNi00NGVlLWIzMDYtZTk3MTQ3NGQxZGEwXkEyXkFqcGdeQXVyMzMwOTU5MDk@._V1_QL75_UX190_CR0,0,190,281_.jpg"
-                                             alt=""
-                                             style="width: 100%; max-width: 600px; height: auto; margin: auto; display: block;">
-                                    </td>
-                                    <td valign="middle" width="50%">
-                                        <div class="text-blog" style="text-align: left; padding-left:25px;">
-                                            <p class="meta"><span>Posted on Feb 18, 2019</span> <span>Food</span></p>
-                                            <h2>Tips For Winter Season</h2>
-                                            <p>A small river named Duden flows by their place and supplies it with the
-                                                necessary regelialia.</p>
-                                            <p><a href="#" class="btn btn-primary">Read more</a></p>
-                                        </div>
-                                    </td>
-                                </table>
-                            </td>
-                        </tr>
+
+                        {{ range . }}
+                            <tr>
+                                <td style="padding-bottom: 30px;">
+                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                        <td valign="middle" width="40%">
+                                            <img src="{{ .PosterUrl }}"
+                                                 alt=""
+                                                 style="width: 100%; max-width: 600px; height: auto; margin: auto; display: block;">
+                                        </td>
+                                        <td valign="middle" width="60%">
+                                            <div class="text-blog" style="text-align: left; padding-left:25px;">
+
+                                                <p class="meta">
+                                                    <span>Title:</span>
+                                                    <span class="meta_content">{{ .CompositeTitle }}</span>
+                                                </p>
+                                                <p class="meta">
+                                                    <span>Language:</span>
+                                                    <span class="meta_content">{{ .Lang }}</span>
+                                                </p>
+                                                <p class="meta">
+                                                    <span>Genres:</span>
+                                                    <span class="meta_content">{{ .Genres }}</span>
+                                                </p>
+                                                <p class="meta">
+                                                    <span>Release date:</span>
+                                                    <span class="meta_content">{{ .ReleaseDate }} </span>
+                                                </p>
+                                                <p class="meta">
+                                                    <span>Description:</span>
+                                                    <span class="meta_content">{{ .Description }} </span>
+                                                </p>
+                                                <p class="meta">
+                                                    <span>Duration:</span>
+                                                    <span class="meta_content">{{ .Duration }}</span>
+                                                </p>
+
+                                            </div>
+                                        </td>
+                                    </table>
+                                </td>
+                            </tr>
+                        {{ end }}
+
+
 
                     </table>
                 </td>
             </tr><!-- end: tr -->
-
-            <!-- ANNOUNCEMENT -->
-            <tr>
-                <td class="bg_white">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                        <tr>
-                            <td>
-                                <a href="#"><img src="images/bg_2.jpg" alt=""
-                                                 style="width: 100%; max-width: 600px; height: auto; margin: auto; display: block;"></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-blog" style="text-align: center; padding: 2em 2.5em">
-                                <p class="meta"><span>Posted on Feb 18, 2019</span> <span>Food</span></p>
-                                <h3 style="font-size: 24px;">Be Ready For a Winter Season</h3>
-                                <p>Even the all-powerful Pointing has no control about the blind texts it is an almost
-                                    unorthographic life One day however a small line of blind text by the name of Lorem
-                                    Ipsum decided to leave for the far World of Grammar.</p>
-                                <p><a href="#" class="btn btn-primary">Read more</a></p>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr><!--  -->
 
             <!-- 1 Column Text + Button : END -->
         </table>
