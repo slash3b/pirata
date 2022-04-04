@@ -382,47 +382,47 @@ table{}
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
 
                         {{ range . }}
-                            <tr>
-                                <td style="padding-bottom: 30px;">
-                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                        <td valign="middle" width="40%">
-                                            <img src="{{ .PosterUrl }}"
-                                                 alt=""
-                                                 style="width: 100%; max-width: 600px; height: auto; margin: auto; display: block;">
-                                        </td>
-                                        <td valign="middle" width="60%">
-                                            <div class="text-blog" style="text-align: left; padding-left:25px;">
+                        <tr>
+                            <td style="padding-bottom: 30px;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <td valign="middle" width="40%">
+                                        <img src="{{ .PosterUrl }}"
+                                             alt=""
+                                             style="width: 100%; max-width: 600px; height: auto; margin: auto; display: block;">
+                                    </td>
+                                    <td valign="middle" width="60%">
+                                        <div class="text-blog" style="text-align: left; padding-left:25px;">
 
-                                                <p class="meta">
-                                                    <span>Title:</span>
-                                                    <span class="meta_content">{{ .CompositeTitle }}</span>
-                                                </p>
-                                                <p class="meta">
-                                                    <span>Language:</span>
-                                                    <span class="meta_content">{{ .Lang }}</span>
-                                                </p>
-                                                <p class="meta">
-                                                    <span>Genres:</span>
-                                                    <span class="meta_content">{{ .Genres }}</span>
-                                                </p>
-                                                <p class="meta">
-                                                    <span>Release date:</span>
-                                                    <span class="meta_content">{{ .ReleaseDate }} </span>
-                                                </p>
-                                                <p class="meta">
-                                                    <span>Description:</span>
-                                                    <span class="meta_content">{{ .Description }} </span>
-                                                </p>
-                                                <p class="meta">
-                                                    <span>Duration:</span>
-                                                    <span class="meta_content">{{ .Duration }}</span>
-                                                </p>
+                                            <p class="meta">
+                                                <span>Title:</span>
+                                                <span class="meta_content">{{ .CompositeTitle }}</span>
+                                            </p>
+                                            <p class="meta">
+                                                <span>Language:</span>
+                                                <span class="meta_content">{{ .Lang }}</span>
+                                            </p>
+                                            <p class="meta">
+                                                <span>Genres:</span>
+                                                <span class="meta_content">{{ .Genres }}</span>
+                                            </p>
+                                            <p class="meta">
+                                                <span>Release date:</span>
+                                                <span class="meta_content">{{ .ReleaseDate }} </span>
+                                            </p>
+                                            <p class="meta">
+                                                <span>Description:</span>
+                                                <span class="meta_content">{{ .Description }} </span>
+                                            </p>
+                                            <p class="meta">
+                                                <span>Duration:</span>
+                                                <span class="meta_content">{{ .Duration }}</span>
+                                            </p>
 
-                                            </div>
-                                        </td>
-                                    </table>
-                                </td>
-                            </tr>
+                                        </div>
+                                    </td>
+                                </table>
+                            </td>
+                        </tr>
                         {{ end }}
 
 
