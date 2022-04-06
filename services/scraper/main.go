@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"database/sql"
-	"html/template"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
-	"scraper/dto"
 	"scraper/service"
 	"scraper/storage/repository"
 	"time"
@@ -17,6 +14,8 @@ import (
 	"github.com/mailjet/mailjet-apiv3-go/v3"
 
 	_ "github.com/mattn/go-sqlite3"
+
+	_ "embed"
 )
 
 /*
@@ -24,7 +23,6 @@ import (
 	cineplex.go service -- knows how and gets raw films and uses converter to get those
 
 	final product of service is a batch of Film models
-
 
 	I want to add those to the database
 	I want to send email with films, possibly updated with more info, trailers and so on.
@@ -40,14 +38,26 @@ import (
 	todo: figure what to do with logging
 */
 
+type runtimeConfig struct {
+	mailjetPubKey     string
+	mailJetPrivateKey string
+	sqlitePath        string
+}
+
+var runtimeConf runtimeConfig
+
+func init() {
+	runtimeConf = runtimeConfig{
+		mailjetPubKey:     os.Getenv("MJ_APIKEY_PUBLIC"),
+		mailJetPrivateKey: os.Getenv("MJ_APIKEY_PRIVATE"),
+		sqlitePath:        os.Getenv("SQLITE_PATH"),
+	}
+}
+
+// add cli help flag that describes exit codes
 func main() {
 
-	/**
-	DB stuff
-	file:test.db?cache=shared&mode=memory
-	*/
-
-	db, err := sql.Open("sqlite3", "file:../../pirata.db") // todo update: pass through ENV variables
+	db, err := sql.Open("sqlite3", "file:../../pirata.db")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -59,19 +69,10 @@ func main() {
 		}
 	}()
 
-	filmRepo := repository.NewRepository(db)
+	filmRepo := repository.NewFilmStorageRepository(db)
+	emailRepo := repository.NewSubscriberRepository(db)
 
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	scraperClient := &http.Client{
-		Transport:     nil,
-		CheckRedirect: nil,
-		Jar:           jar,
-		Timeout:       time.Second * 30,
-	}
+	scraperClient := getHttpClientWithCookies()
 
 	scraperService, err := service.NewCineplexScraper(scraperClient, filmRepo)
 	if err != nil {
@@ -80,61 +81,59 @@ func main() {
 
 	imdbService := service.NewIMDB(scraperClient)
 
-	allNewFilms, err := scraperService.GetAllFilms() // todo: better naming
+	mailjetClient := mailjet.NewMailjetClient(runtimeConf.mailjetPubKey, runtimeConf.mailJetPrivateKey)
+
+	mailerService := service.NewMailer(mailjetClient, service.MailerConfig{
+		FromEmail: os.Getenv("FROM_EMAIL"),
+		FromName:  os.Getenv("FROM_NAME"),
+	}, emailRepo)
+
+	// EXECUTION below
+
+	process(scraperService, imdbService, mailerService)
+
+	//ticker := time.NewTicker(time.Second * 1)
+	//defer ticker.Stop()
+	//
+	//for {
+	//	select {
+	//	// case to stop loop in case sigkill received
+	//	case <-ticker.C:
+	//		fmt.Println("processing....")
+	//		process(scraperService, imdbService, mailerService)
+	//
+	//	}
+	//}
+
+}
+
+func process(scraper *service.CineplexScraper, imdb *service.IMDB, mailer service.Sender) {
+
+	allNewFilms, err := scraper.GetAllFilms()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	emailFilms := []dto.EmailFilm{}
-	for _, v := range allNewFilms {
-		emailFilms = append(emailFilms, dto.FromModel(v, imdbService.GetFilmData(v)))
+	emailFilms := imdb.EnrichFilms(allNewFilms)
+
+	if len(emailFilms) > 0 {
+		err = mailer.Send(emailFilms)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
+}
 
-	// todo : create a static page where users might subscribe ?
-	// YES and unsubscribe also
-
-	// use static fs
-	tpl, err := template.ParseFiles("static/email.html")
-	if err != nil {
-		panic(err)
-	}
-
-	b := bytes.NewBufferString("")
-	wr := bufio.NewWriter(b)
-
-	err = tpl.Execute(wr, emailFilms)
-	if err != nil {
-		panic(err)
-	}
-
-	htmlOutput := b.String()
-
-	mjPubK := os.Getenv("MJ_APIKEY_PUBLIC")
-	mjPrivK := os.Getenv("MJ_APIKEY_PRIVATE")
-	fromEmail := os.Getenv("FROM_EMAIL")
-	fromName := os.Getenv("FROM_NAME")
-
-	mailjetClient := mailjet.NewMailjetClient(mjPubK, mjPrivK)
-	messagesInfo := []mailjet.InfoMessagesV31{
-		{
-			From: &mailjet.RecipientV31{
-				Email: fromEmail,
-				Name:  fromName,
-			},
-			To: &mailjet.RecipientsV31{
-				mailjet.RecipientV31{
-					Email: "slash3b@gmail.com",
-					Name:  "Ilya",
-				},
-			},
-			Subject:  "Yo! Pirata has found some new upcoming movies in cineplex cinema",
-			HTMLPart: htmlOutput,
-		},
-	}
-
-	messages := mailjet.MessagesV31{Info: messagesInfo}
-	_, err = mailjetClient.SendMailV31(&messages)
+func getHttpClientWithCookies() *http.Client {
+	jar, err := cookiejar.New(nil)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	return &http.Client{
+		Transport:     nil,
+		CheckRedirect: nil,
+		Jar:           jar,
+		Timeout:       time.Second * 30,
 	}
 }

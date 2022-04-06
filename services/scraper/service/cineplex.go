@@ -7,16 +7,17 @@ import (
 	"scraper/storage/model"
 	"scraper/storage/repository"
 	"strings"
+	"sync"
 
 	"github.com/anaskhan96/soup"
 )
 
 type CineplexScraper struct {
 	c *http.Client
-	r repository.StorageRepository
+	r repository.FilmStorageRepository
 }
 
-func NewCineplexScraper(httpClient *http.Client, repo repository.StorageRepository) (*CineplexScraper, error) {
+func NewCineplexScraper(httpClient *http.Client, repo repository.FilmStorageRepository) (*CineplexScraper, error) {
 
 	scraper := CineplexScraper{
 		c: httpClient,
@@ -42,35 +43,45 @@ func (c *CineplexScraper) GetAllFilms() ([]model.Film, error) {
 	root := soup.HTMLParse(out)
 
 	allMovies := root.FindAll("div", "class", "movies_blcks")
+
+	var wg sync.WaitGroup
+
 	for _, movie := range allMovies {
+		wg.Add(1)
 
-		title := strings.TrimSpace(movie.Find("h3", "class", "overlay__title").Text()) // title
-		lang := strings.TrimSpace(movie.Find("span", "class", "overlay__lang").Text()) // lang
-		startDate := strings.TrimSpace(movie.Find("div", "class", "startdate").Text()) // startdate
+		go func(m soup.Root) {
+			defer wg.Done()
 
-		filmDTO := dto.Film{
-			Title: title,
-			Lang:  lang,
-			Date:  startDate,
-		}
+			title := strings.TrimSpace(m.Find("h3", "class", "overlay__title").Text()) // title
+			lang := strings.TrimSpace(m.Find("span", "class", "overlay__lang").Text()) // lang
+			startDate := strings.TrimSpace(m.Find("div", "class", "startdate").Text()) // startdate
 
-		filmModel, err := converter.FromDTO(filmDTO)
-		if err != nil {
-			// todo log with DTO
-			continue
-		}
+			filmDTO := dto.Film{
+				Title: title,
+				Lang:  lang,
+				Date:  startDate,
+			}
 
-		// check if film exists
-		if c.r.IsExists(filmModel) {
-			//fmt.Println(c.r.Insert(filmModel))
-			//return response, nil
-			continue
-		}
+			filmModel, err := converter.FromDTO(filmDTO)
+			if err != nil {
+				// todo log with DTO
+				return
+			}
 
-		//c.r.IsExists()
+			// check if film exists
+			if c.r.IsExists(filmModel) {
+				return
+			}
 
-		response = append(response, filmModel)
+			c.r.Insert(filmModel)
+
+			//c.r.IsExists()
+
+			response = append(response, filmModel)
+		}(movie)
 	}
+
+	wg.Wait()
 
 	return response, nil
 }

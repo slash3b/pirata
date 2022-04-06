@@ -18,7 +18,7 @@ type EmailFilm struct {
 	Genres         string
 }
 
-func FromModel(film model.Film, data IMDBData) EmailFilm {
+func EmailFromModel(film model.Film, data IMDBData) EmailFilm {
 
 	var langEmoji string
 	switch strings.ToLower(film.Lang) {

@@ -8,6 +8,7 @@ import (
 	"scraper/dto"
 	"scraper/storage/model"
 	"strings"
+	"sync"
 
 	"github.com/anaskhan96/soup"
 )
@@ -80,7 +81,28 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 	return soup.HTMLParse(res), nil
 }
 
-func (c *IMDB) GetFilmData(film model.Film) dto.IMDBData {
+func (c *IMDB) EnrichFilms(films []model.Film) []dto.EmailFilm {
+	var wg sync.WaitGroup
+
+	var emailFilms []dto.EmailFilm
+
+	for _, f := range films {
+		wg.Add(1)
+		go func(film model.Film) {
+
+			defer wg.Done()
+
+			data := c.getFilmData(film)
+			emailFilms = append(emailFilms, dto.EmailFromModel(film, data))
+		}(f)
+	}
+
+	wg.Wait()
+
+	return emailFilms
+}
+
+func (c *IMDB) getFilmData(film model.Film) dto.IMDBData {
 
 	var data dto.IMDBData
 
