@@ -1,32 +1,23 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
+	"os/signal"
 	"scraper/service"
 	"scraper/storage/repository"
+	"syscall"
 	"time"
 
 	"github.com/mailjet/mailjet-apiv3-go/v3"
 
 	_ "github.com/mattn/go-sqlite3"
-
-	_ "embed"
 )
-
-/*
-	converter.go converter -- gets a strings parsed and transforms them to a Film Model ?
-	cineplex.go service -- knows how and gets raw films and uses converter to get those
-
-	final product of service is a batch of Film models
-
-	I want to add those to the database
-	I want to send email with films, possibly updated with more info, trailers and so on.
-*/
 
 /*
 	for now
@@ -54,7 +45,7 @@ func init() {
 	}
 }
 
-// add cli help flag that describes exit codes
+// add cli help flag that describes exit codes (!). Does it necessary?
 func main() {
 
 	db, err := sql.Open("sqlite3", "file:../../pirata.db")
@@ -88,23 +79,30 @@ func main() {
 		FromName:  os.Getenv("FROM_NAME"),
 	}, emailRepo)
 
-	// EXECUTION below
+	ticker := time.NewTicker(time.Hour * 6)
+	defer ticker.Stop()
 
-	process(scraperService, imdbService, mailerService)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	defer cancel()
 
-	//ticker := time.NewTicker(time.Second * 1)
-	//defer ticker.Stop()
-	//
-	//for {
-	//	select {
-	//	// case to stop loop in case sigkill received
-	//	case <-ticker.C:
-	//		fmt.Println("processing....")
-	//		process(scraperService, imdbService, mailerService)
-	//
-	//	}
-	//}
+	done := make(chan struct{})
 
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				fmt.Println("oh well, interrupted!")
+				done <- struct{}{}
+				return
+			case <-ticker.C:
+				process(scraperService, imdbService, mailerService)
+			}
+		}
+	}()
+
+	<-done
+
+	fmt.Println("Done!")
 }
 
 func process(scraper *service.CineplexScraper, imdb *service.IMDB, mailer service.Sender) {
