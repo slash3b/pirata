@@ -80,8 +80,9 @@ func main() {
 	}, emailRepo)
 
 	log.Println("Scraper started!")
+	process(scraperService, imdbService, mailerService)
 
-	ticker := time.NewTicker(time.Hour * 6)
+	ticker := time.NewTicker(time.Hour * 3)
 	defer ticker.Stop()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)

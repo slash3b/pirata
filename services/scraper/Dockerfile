@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as base_img_
+FROM golang:1.18-alpine as builder_img_
 RUN apk add --no-cache --update gcc g++
 WORKDIR /go/src
 COPY go.mod go.sum ./
@@ -7,5 +7,5 @@ COPY . .
 RUN go build -v -o /go/bin/scraper .
 
 FROM alpine:latest
-COPY --from=base_img_ /go/bin/scraper .
+COPY --from=builder_img_ /go/bin/scraper .
 CMD ["./scraper"]
