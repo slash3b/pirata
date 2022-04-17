@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  scraper:
+    build: services/scraper
+    env_file:
+      - services/scraper/.env
+  prometheus:
+    image: prom:prometheus
+  grafana:
+    image: grafana:grafana-enterprise
+    ports:
+      - "3000:3000"

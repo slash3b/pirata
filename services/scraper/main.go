@@ -79,6 +79,8 @@ func main() {
 		FromName:  os.Getenv("FROM_NAME"),
 	}, emailRepo)
 
+	log.Println("Scraper started!")
+
 	ticker := time.NewTicker(time.Hour * 6)
 	defer ticker.Stop()
 
@@ -91,7 +93,7 @@ func main() {
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Println("oh well, interrupted!")
+				log.Println("program execution interrupted, exiting")
 				done <- struct{}{}
 				return
 			case <-ticker.C:
