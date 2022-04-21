@@ -1,0 +1,1 @@
+DELETE FROM subscribers where email = "slash3b@gmail.com"

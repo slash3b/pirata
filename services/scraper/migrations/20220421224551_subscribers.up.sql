@@ -1,0 +1,1 @@
+INSERT INTO subscribers (email, name) VALUES("slash3b@gmail.com", "Ilya");

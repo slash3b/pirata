@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,20 +15,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+
 	"github.com/mailjet/mailjet-apiv3-go/v3"
 
 	_ "github.com/mattn/go-sqlite3"
+
+	_ "embed"
 )
-
-/*
-	for now
-	lets have just two services:
-	- this with everything inside
-	- prometheus
-	- grafana
-
-	todo: figure what to do with logging
-*/
 
 type runtimeConfig struct {
 	mailjetPubKey     string
@@ -36,6 +34,9 @@ type runtimeConfig struct {
 }
 
 var runtimeConf runtimeConfig
+
+//go:embed migrations/*
+var migrationFiles embed.FS
 
 func init() {
 	runtimeConf = runtimeConfig{
@@ -48,7 +49,7 @@ func init() {
 // add cli help flag that describes exit codes (!). Does it necessary?
 func main() {
 
-	db, err := sql.Open("sqlite3", "file:../../pirata.db")
+	db, err := sql.Open("sqlite3", "file:./pirata.db")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -59,6 +60,23 @@ func main() {
 			log.Fatalln(err)
 		}
 	}()
+
+	sourceDriver, err := iofs.New(migrationFiles, "migrations")
+	if err != nil {
+		panic(err)
+	}
+
+	migrationDriver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		panic(err)
+	}
+
+	migration, err := migrate.NewWithInstance("migrations", sourceDriver, "sqlite3", migrationDriver)
+
+	err = migration.Up()
+	if err != nil {
+		panic(err)
+	}
 
 	filmRepo := repository.NewFilmStorageRepository(db)
 	emailRepo := repository.NewSubscriberRepository(db)
