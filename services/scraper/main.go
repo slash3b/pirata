@@ -15,6 +15,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -46,6 +50,12 @@ func init() {
 	}
 }
 
+var scrapeCounter = prometheus.NewCounter(
+	prometheus.CounterOpts{
+		Name: "pirata_scrape_counter",
+		Help: "Counter for scrape times, just to see it running",
+	})
+
 // add cli help flag that describes exit codes (!). Does it necessary?
 func main() {
 
@@ -75,7 +85,7 @@ func main() {
 
 	err = migration.Up()
 	if err != nil {
-		panic(err)
+		fmt.Println("migration UP result:", err.Error())
 	}
 
 	filmRepo := repository.NewFilmStorageRepository(db)
@@ -98,13 +108,25 @@ func main() {
 	}, emailRepo)
 
 	log.Println("Scraper started!")
-	process(scraperService, imdbService, mailerService)
 
-	ticker := time.NewTicker(time.Hour * 3)
+	ticker := time.NewTicker(time.Minute * 3)
 	defer ticker.Stop()
+
+	// possibly make ticker change on like the do in caddy and prometheus
+	// syscall.SIGHUP
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
+
+	prometheus.MustRegister(scrapeCounter)
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
+
+	process(scraperService, imdbService, mailerService) // this process should be another service so I can do myService.Scrape()
+	scrapeCounter.Inc()
 
 	done := make(chan struct{})
 
@@ -117,6 +139,7 @@ func main() {
 				return
 			case <-ticker.C:
 				process(scraperService, imdbService, mailerService)
+				scrapeCounter.Inc()
 			}
 		}
 	}()

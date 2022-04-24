@@ -2,12 +2,17 @@ version: "3.9"
 
 services:
   scraper:
+    container_name: scraper
     build: services/scraper
     env_file:
       - services/scraper/.env
   prometheus:
-    image: prom:prometheus
+    container_name: prometheus
+    build: services/prometheus
+    ports:
+      - "9090:9090"
   grafana:
-    image: grafana:grafana-enterprise
+    container_name: grafana
+    image: grafana/grafana-enterprise
     ports:
       - "3000:3000"
