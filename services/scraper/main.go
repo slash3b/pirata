@@ -107,9 +107,7 @@ func main() {
 		FromName:  os.Getenv("FROM_NAME"),
 	}, emailRepo)
 
-	log.Println("Scraper started!")
-
-	ticker := time.NewTicker(time.Hour * 3)
+	ticker := time.NewTicker(time.Hour * 6)
 	defer ticker.Stop()
 
 	// possibly make ticker change on like the do in caddy and prometheus
@@ -127,6 +125,8 @@ func main() {
 
 	process(scraperService, imdbService, mailerService) // this process should be another service so I can do myService.Scrape()
 	scrapeCounter.Inc()
+
+	log.Println("Scraper started!")
 
 	done := make(chan struct{})
 

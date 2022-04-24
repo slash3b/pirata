@@ -13,12 +13,14 @@ RUN --mount=type=cache,target=/go/pkg \
 COPY . .
 
 RUN --mount=type=cache,target=/go/pkg \
-    go build -v -o /go/bin/scraper .
+    CGO_ENABLED=1 go build -v -o /go/bin/scraper .
 
-FROM alpine
+FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=builder_img_ /go/bin/scraper /app
+RUN apk add --no-cache --update tzdata
 
-ENTRYPOINT "./scraper"
+COPY --from=builder_img_ /go/bin /app
+
+ENTRYPOINT /app/scraper
