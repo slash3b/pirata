@@ -9,10 +9,8 @@ services:
   prometheus:
     container_name: prometheus
     build: services/prometheus
-    ports:
-      - "9090:9090"
+    network_mode: host
   grafana:
     container_name: grafana
     image: grafana/grafana-enterprise
-    ports:
-      - "3000:3000"
+    network_mode: host

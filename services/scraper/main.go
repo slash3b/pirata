@@ -109,7 +109,7 @@ func main() {
 
 	log.Println("Scraper started!")
 
-	ticker := time.NewTicker(time.Minute * 3)
+	ticker := time.NewTicker(time.Hour * 3)
 	defer ticker.Stop()
 
 	// possibly make ticker change on like the do in caddy and prometheus
