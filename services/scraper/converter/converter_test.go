@@ -85,6 +85,21 @@ func TestFromDTO(t *testing.T) {
 				StartDate: time.Date(2022, time.Month(3), 10, 0, 0, 0, 0, location),
 			},
 		},
+		{
+			name: "3D dimension ",
+			incoming: dto.Film{
+				Title: `The Contractor 3D`,
+				Lang:  `(KO)`,
+				Date:  "(10.03.2022)",
+			},
+			expected: model.Film{
+				ID:        0,
+				Title:     "The Contractor",
+				Lang:      "KO",
+				Dimension: "3D",
+				StartDate: time.Date(2022, time.Month(3), 10, 0, 0, 0, 0, location),
+			},
+		},
 	}
 
 	for _, testCase := range testCases {

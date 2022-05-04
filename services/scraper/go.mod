@@ -5,8 +5,10 @@ go 1.18
 require (
 	github.com/anaskhan96/soup v1.2.5
 	github.com/golang-migrate/migrate/v4 v4.15.1
+	github.com/golang/mock v1.6.0
 	github.com/mailjet/mailjet-apiv3-go/v3 v3.1.1
 	github.com/mattn/go-sqlite3 v1.14.12
+	github.com/prometheus/client_golang v1.12.1
 	github.com/stretchr/testify v1.7.0
 )
 
@@ -19,7 +21,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect

@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
 	"os"
 	"os/signal"
+	"scraper/client"
 	"scraper/service"
+	"scraper/service/cineplex"
+	"scraper/service/cineplex/decorator"
 	"scraper/storage/repository"
 	"syscall"
 	"time"
@@ -71,34 +73,26 @@ func main() {
 		}
 	}()
 
-	sourceDriver, err := iofs.New(migrationFiles, "migrations")
+	err = dbMigrationUp(db)
 	if err != nil {
-		panic(err)
-	}
-
-	migrationDriver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
-	if err != nil {
-		panic(err)
-	}
-
-	migration, err := migrate.NewWithInstance("migrations", sourceDriver, "sqlite3", migrationDriver)
-
-	err = migration.Up()
-	if err != nil {
-		fmt.Println("migration UP result:", err.Error())
+		log.Fatalln(err)
 	}
 
 	filmRepo := repository.NewFilmStorageRepository(db)
 	emailRepo := repository.NewSubscriberRepository(db)
 
-	scraperClient := getHttpClientWithCookies()
-
-	scraperService, err := service.NewCineplexScraper(scraperClient, filmRepo)
+	httpClient, err := client.NewHttpClientWithCookies()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	imdbService := service.NewIMDB(scraperClient)
+	soupService := decorator.NewSoupDecorator(httpClient)
+	scraperService, err := cineplex.NewScraper(filmRepo, soupService)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	imdbService := service.NewIMDB(httpClient)
 
 	mailjetClient := mailjet.NewMailjetClient(runtimeConf.mailjetPubKey, runtimeConf.mailJetPrivateKey)
 
@@ -149,33 +143,45 @@ func main() {
 	fmt.Println("Done!")
 }
 
-func process(scraper *service.CineplexScraper, imdb *service.IMDB, mailer service.Sender) {
+func process(scraper *cineplex.Scraper, imdb *service.IMDB, mailer service.Sender) error {
 
-	allNewFilms, err := scraper.GetAllFilms()
+	newFilms, err := scraper.GetAllFilms()
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
-	emailFilms := imdb.EnrichFilms(allNewFilms)
+	if len(newFilms) > 0 {
+		emailFilms := imdb.EnrichFilms(newFilms)
 
-	if len(emailFilms) > 0 {
 		err = mailer.Send(emailFilms)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
+	return nil
 }
 
-func getHttpClientWithCookies() *http.Client {
-	jar, err := cookiejar.New(nil)
+func dbMigrationUp(db *sql.DB) error {
+	sourceDriver, err := iofs.New(migrationFiles, "migrations")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	return &http.Client{
-		Transport:     nil,
-		CheckRedirect: nil,
-		Jar:           jar,
-		Timeout:       time.Second * 30,
+	migrationDriver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		return err
 	}
+
+	// NewWithInstance always returns nil error
+	migration, err := migrate.NewWithInstance("migrations", sourceDriver, "sqlite3", migrationDriver)
+	if err != nil {
+		return err
+	}
+
+	err = migration.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
+	return nil
 }

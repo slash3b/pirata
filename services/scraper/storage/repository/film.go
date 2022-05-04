@@ -10,17 +10,11 @@ import (
 use Driver interface for testing
 */
 
-type FilmStorageRepository interface {
-	IsExists(film model.Film) bool
-	Insert(film model.Film) (model.Film, error)
-	//GetBy(dto dto.Film) model.Film
-}
-
 type FilmRepository struct {
 	db *sql.DB
 }
 
-func NewFilmStorageRepository(db *sql.DB) FilmStorageRepository {
+func NewFilmStorageRepository(db *sql.DB) *FilmRepository {
 	return &FilmRepository{db: db}
 }
 
