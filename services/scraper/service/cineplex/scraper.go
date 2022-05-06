@@ -21,13 +21,11 @@ type Scraper struct {
 	s Soup
 }
 
-func NewScraper(repo FilmStorageRepository, sp Soup) (*Scraper, error) {
-	scraper := Scraper{
+func NewScraper(repo FilmStorageRepository, sp Soup) *Scraper {
+	return &Scraper{
 		r: repo,
 		s: sp,
 	}
-
-	return &scraper, nil
 }
 
 func (c *Scraper) GetAllFilms() ([]model.Film, error) {

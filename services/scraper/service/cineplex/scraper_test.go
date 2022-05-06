@@ -37,8 +37,7 @@ func TestScraper_GetAllFilms_WithMixedResults(t *testing.T) {
 
 	mockRepo.EXPECT().Insert(gomock.Any()).Return(model.Film{}, nil).Times(1)
 
-	scraper, err := cineplex.NewScraper(mockRepo, mockSoup)
-	assert.NoError(t, err)
+	scraper := cineplex.NewScraper(mockRepo, mockSoup)
 
 	films, err := scraper.GetAllFilms()
 	assert.NoError(t, err)

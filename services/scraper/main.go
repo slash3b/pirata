@@ -58,8 +58,16 @@ var scrapeCounter = prometheus.NewCounter(
 		Help: "Counter for scrape times, just to see it running",
 	})
 
+var scrapeHist = prometheus.NewHistogram(
+	prometheus.HistogramOpts{
+		Name: "pirata_scrape_hist",
+		Help: "Scrape times",
+	})
+
 // add cli help flag that describes exit codes (!). Does it necessary?
 func main() {
+
+	prometheus.MustRegister(scrapeCounter, scrapeHist)
 
 	db, err := sql.Open("sqlite3", "file:./pirata.db")
 	if err != nil {
@@ -87,7 +95,7 @@ func main() {
 	}
 
 	soupService := decorator.NewSoupDecorator(httpClient)
-	scraperService, err := cineplex.NewScraper(filmRepo, soupService)
+	scraperService := cineplex.NewScraper(filmRepo, soupService)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -101,26 +109,26 @@ func main() {
 		FromName:  os.Getenv("FROM_NAME"),
 	}, emailRepo)
 
-	ticker := time.NewTicker(time.Hour * 6)
+	ticker := time.NewTicker(time.Minute * 3)
 	defer ticker.Stop()
-
-	// possibly make ticker change on like the do in caddy and prometheus
-	// syscall.SIGHUP
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
-
-	prometheus.MustRegister(scrapeCounter)
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":2112", nil)
 	}()
 
-	process(scraperService, imdbService, mailerService) // this process should be another service so I can do myService.Scrape()
-	scrapeCounter.Inc()
-
 	log.Println("Scraper started!")
+	err = process(scraperService, imdbService, mailerService) // this process should be another service so I can do myService.Scrape() // or not ?
+	if err != nil {
+		log.Println(err)
+	}
+	scrapeCounter.Inc()
+	// learn about proper context propagation
+	// syscall.SIGHUP
+	// possibly make ticker change on like the do in caddy and prometheus
 
 	done := make(chan struct{})
 
@@ -132,7 +140,10 @@ func main() {
 				done <- struct{}{}
 				return
 			case <-ticker.C:
-				process(scraperService, imdbService, mailerService)
+				err = process(scraperService, imdbService, mailerService)
+				if err != nil {
+					log.Println(err)
+				}
 				scrapeCounter.Inc()
 			}
 		}
@@ -143,7 +154,11 @@ func main() {
 	fmt.Println("Done!")
 }
 
+// pipeline pattern may be ?
 func process(scraper *cineplex.Scraper, imdb *service.IMDB, mailer service.Sender) error {
+	timer := prometheus.NewTimer(scrapeHist)
+
+	defer timer.ObserveDuration()
 
 	newFilms, err := scraper.GetAllFilms()
 	if err != nil {

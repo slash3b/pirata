@@ -33,7 +33,6 @@ func NewIMDB(httpClient *http.Client) *IMDB {
 */
 
 func (c *IMDB) search(title string) (soup.Root, error) {
-
 	vals := url.Values{}
 	vals.Add("q", title)
 
@@ -41,7 +40,7 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 
 	out, err := soup.GetWithClient(path, c.c)
 	if err != nil {
-		// log here error
+
 		return soup.Root{}, err
 	}
 
@@ -66,7 +65,6 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 
 	movieTitleLink, ok := attributes["href"]
 	if !ok {
-		// log with ... ooops smth happened
 		return soup.Root{}, errors.New("could not find link to movie")
 	}
 
@@ -74,7 +72,6 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 
 	res, err := soup.GetWithClient(path, c.c)
 	if err != nil {
-		// again log error here
 		return soup.Root{}, err
 	}
 

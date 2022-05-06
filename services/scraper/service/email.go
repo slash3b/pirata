@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"embed"
 	"html/template"
+	"log"
 	"scraper/dto"
 	"scraper/storage/repository"
 
@@ -46,7 +47,7 @@ func (m *Mailer) Send(films []dto.EmailFilm) error {
 
 	tpl, err := template.ParseFS(emailTpl, "template/email.html")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	b := bytes.NewBufferString("")
@@ -54,7 +55,7 @@ func (m *Mailer) Send(films []dto.EmailFilm) error {
 
 	err = tpl.Execute(wr, films)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	htmlOutput := b.String()
@@ -83,7 +84,8 @@ func (m *Mailer) Send(films []dto.EmailFilm) error {
 
 		_, err = m.cl.SendMailV31(&messages)
 		if err != nil {
-			return err
+			// todo: implement retry with exponential backoff just for fun
+			log.Println(err)
 		}
 	}
 

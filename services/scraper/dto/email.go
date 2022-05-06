@@ -8,7 +8,6 @@ import (
 
 // EmailFilm info represent film information ready to be sent by email
 type EmailFilm struct {
-	// "The Matrix 3D EN"
 	CompositeTitle string
 	Lang           string
 	ReleaseDate    string
@@ -28,6 +27,8 @@ func EmailFromModel(film model.Film, data IMDBData) EmailFilm {
 		langEmoji = `🇲🇩`
 	case "en":
 		langEmoji = `🇺🇸`
+	default:
+		langEmoji = strings.ToLower(film.Lang)
 	}
 
 	return EmailFilm{

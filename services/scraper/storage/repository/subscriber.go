@@ -29,7 +29,7 @@ func (r *SubscriberRepository) GetAllActive() ([]model.Subscriber, error) {
 	defer func(rows *sql.Rows) {
 		err = rows.Close()
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 	}(rows)
 
@@ -47,20 +47,7 @@ func (r *SubscriberRepository) GetAllActive() ([]model.Subscriber, error) {
 			Name:       name,
 			Subscribed: subscribed,
 		})
-
 	}
-
-	//var dbDateString string
-	//
-	//err := row.Scan(&fi.ID, &fi.Title, &fi.Lang, &fi.Dimension, &dbDateString)
-	//if err != nil {
-	//	return fi, err
-	//
-	//}
-	//
-	//// todo: parse dbDateString
-	//
-	//fmt.Println("2", fi)
 
 	return subs, nil
 }
