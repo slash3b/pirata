@@ -109,7 +109,7 @@ func main() {
 		FromName:  os.Getenv("FROM_NAME"),
 	}, emailRepo)
 
-	ticker := time.NewTicker(time.Minute * 3)
+	ticker := time.NewTicker(time.Minute * 60)
 	defer ticker.Stop()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
