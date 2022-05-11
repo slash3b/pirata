@@ -36,7 +36,7 @@ func (c *Scraper) GetAllFilms() ([]model.Film, error) {
 	rawMovies, err := c.s.GetMovies()
 	if err != nil {
 		logger.Println("unable to scrape movies", err)
-		return []model.Film{}, err
+		return []model.Film{}, err // todo: should I wrap error here ?
 	}
 
 	for _, mv := range rawMovies {
