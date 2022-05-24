@@ -166,7 +166,7 @@ func process(scraper *cineplex.Scraper, imdb *service.IMDB, mailer service.Sende
 	}
 
 	if len(newFilms) > 0 {
-		emailFilms := imdb.EnrichFilms(newFilms)
+		emailFilms := imdb.FindFilms(newFilms)
 
 		err = mailer.Send(emailFilms)
 		if err != nil {

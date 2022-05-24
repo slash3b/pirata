@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"scraper/cache"
 	"scraper/dto"
 	"scraper/storage/model"
 	"strings"
@@ -13,24 +14,21 @@ import (
 	"github.com/anaskhan96/soup"
 )
 
+const cacheCapacity = 50
+
 type IMDB struct {
-	c *http.Client
+	c     *http.Client
+	cache *cache.LRU[string, dto.IMDBData]
 }
 
 func NewIMDB(httpClient *http.Client) *IMDB {
 	imdb := IMDB{
-		c: httpClient,
+		c:     httpClient,
+		cache: cache.NewLRU[string, dto.IMDBData](cacheCapacity),
 	}
 
 	return &imdb
 }
-
-/*
-	Ideas:
-	1. so do this getting concurrently
-	2. implement LRU cache in case movie was already searched for !
-
-*/
 
 func (c *IMDB) search(title string) (soup.Root, error) {
 	vals := url.Values{}
@@ -78,7 +76,7 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 	return soup.HTMLParse(res), nil
 }
 
-func (c *IMDB) EnrichFilms(films []model.Film) []dto.EmailFilm {
+func (c *IMDB) FindFilms(films []model.Film) []dto.EmailFilm {
 	var wg sync.WaitGroup
 
 	var emailFilms []dto.EmailFilm
@@ -86,11 +84,16 @@ func (c *IMDB) EnrichFilms(films []model.Film) []dto.EmailFilm {
 	for _, f := range films {
 		wg.Add(1)
 		go func(film model.Film) {
-
 			defer wg.Done()
 
-			data := c.getFilmData(film)
-			emailFilms = append(emailFilms, dto.EmailFromModel(film, data))
+			cacheKey := strings.ToLower(film.Title)
+			val, err := c.cache.Get(cacheKey)
+			if err != nil {
+				val = c.getFilmData(film)
+				c.cache.Set(cacheKey, val)
+			}
+			emailFilms = append(emailFilms, dto.EmailFromModel(film, val))
+
 		}(f)
 	}
 
