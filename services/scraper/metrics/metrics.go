@@ -1,13 +1,33 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"fmt"
+	"log"
+	"net/http"
 
-var AllMetrics = []prometheus.Collector{
-	ScraperHeartbeat,
-	ScraperLatency,
-	ScraperErrors,
-	ScraperCache,
-	ScraperCacheEvent,
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+func Start() {
+	prometheus.MustRegister(
+		ScraperHeartbeat,
+		ScraperLatency,
+		ScraperErrors,
+		ScraperCache,
+		ScraperCacheEvent,
+	)
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		log.Println("metrics available on :2112/metrics")
+		err := http.ListenAndServe(":2112", nil)
+		if err != nil {
+			ScraperErrors.WithLabelValues("unable_to_start_metrics").Inc()
+			log.Println(fmt.Errorf("unable to start metrics %v", err))
+		}
+	}()
+
 }
 
 var ScraperHeartbeat = prometheus.NewCounter(

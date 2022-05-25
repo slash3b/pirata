@@ -6,10 +6,10 @@ import (
 	"embed"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"scraper/client"
+	"scraper/config"
 	"scraper/metrics"
 	"scraper/service"
 	"scraper/service/cineplex"
@@ -19,8 +19,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 
@@ -34,28 +32,17 @@ import (
 	_ "embed"
 )
 
-type runtimeConfig struct {
-	mailjetPubKey     string
-	mailJetPrivateKey string
-	sqlitePath        string
-}
-
-var runtimeConf runtimeConfig
-
 //go:embed migrations/*
 var migrationFiles embed.FS
 
-func init() {
-	runtimeConf = runtimeConfig{
-		mailjetPubKey:     os.Getenv("MJ_APIKEY_PUBLIC"),
-		mailJetPrivateKey: os.Getenv("MJ_APIKEY_PRIVATE"),
-		sqlitePath:        os.Getenv("SQLITE_PATH"),
-	}
-}
+var (
+	scraper *cineplex.Scraper
+	imdb    *service.IMDB
+	mailer  *service.Mailer
+)
 
-// add cli help flag that describes exit codes (!). Does it necessary?
 func main() {
-	prometheus.MustRegister(metrics.AllMetrics...)
+	metrics.Start()
 
 	db, err := sql.Open("sqlite3", "file:./pirata.db")
 	if err != nil {
@@ -77,30 +64,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	filmRepo := repository.NewFilmStorageRepository(db)
-	emailRepo := repository.NewSubscriberRepository(db)
-
-	httpClient, err := client.NewHttpClientWithCookies()
-	if err != nil {
-		metrics.ScraperErrors.WithLabelValues("unable_to_create_http_client_with_cookies").Inc()
-		log.Fatalln(err)
-	}
-
-	soupService := decorator.NewSoupDecorator(httpClient)
-	scraperService := cineplex.NewScraper(filmRepo, soupService)
-	if err != nil {
-		metrics.ScraperErrors.WithLabelValues("unable_to_create_scraper").Inc()
-		log.Fatalln(err)
-	}
-
-	imdbService := service.NewIMDB(httpClient)
-
-	mailjetClient := mailjet.NewMailjetClient(runtimeConf.mailjetPubKey, runtimeConf.mailJetPrivateKey)
-
-	mailerService := service.NewMailer(mailjetClient, service.MailerConfig{
-		FromEmail: os.Getenv("FROM_EMAIL"),
-		FromName:  os.Getenv("FROM_NAME"),
-	}, emailRepo)
+	initServices(db)
 
 	ticker := time.NewTicker(time.Minute * 60)
 	defer ticker.Stop()
@@ -108,17 +72,8 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		err = http.ListenAndServe(":2112", nil)
-		if err != nil {
-			metrics.ScraperErrors.WithLabelValues("unable_to_start_metrics").Inc()
-			log.Println(fmt.Errorf("unable to start metrics %v", err))
-		}
-	}()
-
 	log.Println("Scraper started!")
-	err = process(scraperService, imdbService, mailerService) // this process should be another service so I can do myService.Scrape() // or not ?
+	err = process(scraper, imdb, mailer) // this process should be another service so I can do myService.Scrape() // or not ?
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("could_not_run_scraper_process").Inc()
 		log.Println(err)
@@ -140,7 +95,7 @@ func main() {
 				return
 			case <-ticker.C:
 				metrics.ScraperHeartbeat.Inc()
-				err = process(scraperService, imdbService, mailerService)
+				err = process(scraper, imdb, mailer)
 				if err != nil {
 					metrics.ScraperErrors.WithLabelValues("could_not_run_scraper_process").Inc()
 					log.Println(err)
@@ -152,6 +107,40 @@ func main() {
 	<-done
 
 	fmt.Println("Done!")
+}
+
+func initServices(db *sql.DB) {
+
+	filmRepo := repository.NewFilmStorageRepository(db)
+	emailRepo := repository.NewSubscriberRepository(db)
+
+	httpClient, err := client.NewHttpClientWithCookies()
+	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("unable_to_create_http_client_with_cookies").Inc()
+		log.Fatalln(err)
+	}
+
+	soupService := decorator.NewSoupDecorator(httpClient)
+	scraper = cineplex.NewScraper(filmRepo, soupService)
+	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("unable_to_create_scraper").Inc()
+		log.Fatalln(err)
+	}
+
+	imdb = service.NewIMDB(httpClient)
+
+	env, err := config.GetEnv()
+	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("incomplete_environment").Inc()
+		log.Fatalln(err)
+	}
+
+	mailjetClient := mailjet.NewMailjetClient(env.MailjetPubKey, env.MailJetPrivateKey)
+
+	mailer = service.NewMailer(mailjetClient, service.MailerConfig{
+		FromEmail: env.FromEmail,
+		FromName:  env.FromName,
+	}, emailRepo)
 }
 
 // pipeline pattern may be ?
