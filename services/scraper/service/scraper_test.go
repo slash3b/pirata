@@ -1,10 +1,12 @@
-package cineplex_test
+package service_test
 
 import (
+	"context"
 	"scraper/dto"
-	"scraper/service/cineplex"
-	mock_cineplex "scraper/service/cineplex/mock"
+	"scraper/service"
+	mock_service "scraper/service/mock"
 	"scraper/storage/model"
+	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -16,10 +18,10 @@ import (
 func TestScraper_GetAllFilms_WithMixedResults(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 
-	mockSoup := mock_cineplex.NewMockSoup(mockCtrl)
-	mockRepo := mock_cineplex.NewMockFilmStorageRepository(mockCtrl)
+	mockSoup := mock_service.NewMockSoup(mockCtrl)
+	mockRepo := mock_service.NewMockFilmStorageRepository(mockCtrl)
 
-	mockSoup.EXPECT().GetMovies().Return([]dto.Film{
+	mockSoup.EXPECT().GetMovies().Return([]dto.RawFilmData{
 		{Title: "Foo Bar ",
 			Lang: "KO",
 			Date: "(10.03.2022)",
@@ -37,9 +39,21 @@ func TestScraper_GetAllFilms_WithMixedResults(t *testing.T) {
 
 	mockRepo.EXPECT().Insert(gomock.Any()).Return(model.Film{}, nil).Times(1)
 
-	scraper := cineplex.NewScraper(mockRepo, mockSoup)
+	scraper := service.NewScraper(mockRepo, mockSoup)
 
-	films, err := scraper.GetAllFilms()
-	assert.NoError(t, err)
-	assert.Len(t, films, 1)
+	_, films := scraper.GetFilms(context.Background())
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		assert.Equal(t, "Foo Bar", (<-films).Title)
+		// todo: mock time to be able to compare complete DTO struct
+		// fixme: apparently this test became flaky, needs fixing
+	}()
+
+	wg.Wait()
+
 }

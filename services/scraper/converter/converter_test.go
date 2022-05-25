@@ -16,12 +16,12 @@ func TestFromDTO(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		incoming dto.Film
+		incoming dto.RawFilmData
 		expected model.Film
 	}{
 		{
 			name: "title with spaces and newlines",
-			incoming: dto.Film{
+			incoming: dto.RawFilmData{
 				Title: `    The Contractor   
 
 
@@ -39,7 +39,7 @@ func TestFromDTO(t *testing.T) {
 		},
 		{
 			name: "lang data with spaces and newline",
-			incoming: dto.Film{
+			incoming: dto.RawFilmData{
 				Title: `The Contractor 2D`,
 				Lang: ` 
 
@@ -57,7 +57,7 @@ func TestFromDTO(t *testing.T) {
 		},
 		{
 			name: "missing dimension",
-			incoming: dto.Film{
+			incoming: dto.RawFilmData{
 				Title: `The Contractor`,
 				Lang:  `(RU)`,
 				Date:  "(10.03.2022)",
@@ -72,7 +72,7 @@ func TestFromDTO(t *testing.T) {
 		},
 		{
 			name: "3D dimension ",
-			incoming: dto.Film{
+			incoming: dto.RawFilmData{
 				Title: `The Contractor 3D`,
 				Lang:  `(RU)`,
 				Date:  "(10.03.2022)",
@@ -87,7 +87,7 @@ func TestFromDTO(t *testing.T) {
 		},
 		{
 			name: "3D dimension ",
-			incoming: dto.Film{
+			incoming: dto.RawFilmData{
 				Title: `The Contractor 3D`,
 				Lang:  `(KO)`,
 				Date:  "(10.03.2022)",

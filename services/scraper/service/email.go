@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"scraper/dto"
+	"scraper/metrics"
 	"scraper/storage/repository"
 
 	"github.com/mailjet/mailjet-apiv3-go/v3"
@@ -20,7 +21,7 @@ var emailTpl embed.FS
 const subject = "🍿 Yo! Check these upcoming movies in cineplex cinema"
 
 type Sender interface {
-	Send(films []dto.EmailFilm) error
+	Send(films <-chan dto.EmailFilm) error
 }
 
 type Mailer struct {
@@ -34,8 +35,7 @@ type MailerConfig struct {
 	FromName  string
 }
 
-func NewMailer(mjClient *mailjet.Client, conf MailerConfig, r *repository.SubscriberRepository,
-) *Mailer {
+func NewMailer(mjClient *mailjet.Client, conf MailerConfig, r *repository.SubscriberRepository) *Mailer {
 	return &Mailer{
 		cl:   mjClient,
 		conf: conf,
@@ -43,18 +43,24 @@ func NewMailer(mjClient *mailjet.Client, conf MailerConfig, r *repository.Subscr
 	}
 }
 
-func (m *Mailer) Send(films []dto.EmailFilm) error {
-
+func (m *Mailer) Send(emailFilms <-chan dto.EmailFilm) error {
 	tpl, err := template.ParseFS(emailTpl, "template/email.html")
 	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("could_not_parse_email_template").Inc()
 		return err
 	}
 
 	b := bytes.NewBufferString("")
 	wr := bufio.NewWriter(b)
 
+	var films []dto.EmailFilm
+	for ef := range emailFilms {
+		films = append(films, ef)
+	}
+
 	err = tpl.Execute(wr, films)
 	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("could_not_execute_email_template").Inc()
 		return err
 	}
 
@@ -67,6 +73,7 @@ func (m *Mailer) Send(films []dto.EmailFilm) error {
 
 	allSubs, err := m.getRecipients()
 	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("unable_to_get_recipients").Inc()
 		return err
 	}
 

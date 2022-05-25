@@ -1,6 +1,7 @@
 package converter
 
 import (
+	"fmt"
 	"scraper/dto"
 	"scraper/storage/model"
 	"strconv"
@@ -8,7 +9,7 @@ import (
 	"time"
 )
 
-func FromDTO(dto dto.Film) (model.Film, error) {
+func FromDTO(dto dto.RawFilmData) (model.Film, error) {
 	is3D := strings.Contains(dto.Title, "3D")
 	dimension := "2D"
 	if is3D {
@@ -60,4 +61,24 @@ func FromDTO(dto dto.Film) (model.Film, error) {
 	}
 
 	return film, nil
+}
+
+func FromModel(m model.Film) dto.FilmData {
+	var langEmoji string
+	switch strings.ToLower(m.Lang) {
+	case "ru":
+		langEmoji = `🇷🇺`
+	case "ro":
+		langEmoji = `🇲🇩`
+	case "en":
+		langEmoji = `🇺🇸`
+	default:
+		langEmoji = strings.ToUpper(m.Lang)
+	}
+
+	return dto.FilmData{
+		Title:       fmt.Sprintf("%s, %s", m.Title, m.Dimension),
+		Lang:        langEmoji,
+		ReleaseDate: fmt.Sprintf("%s %d, %s", m.StartDate.Month(), m.StartDate.Day(), m.StartDate.Weekday()),
+	}
 }

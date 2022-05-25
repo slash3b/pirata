@@ -1,11 +1,13 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"scraper/cache"
+	"scraper/converter"
 	"scraper/dto"
 	"scraper/storage/model"
 	"strings"
@@ -76,12 +78,12 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 	return soup.HTMLParse(res), nil
 }
 
-func (c *IMDB) FindFilms(films []model.Film) []dto.EmailFilm {
+func (c *IMDB) FindFilms(ctx context.Context, filmModels <-chan model.Film) <-chan dto.EmailFilm {
+	response := make(chan dto.EmailFilm)
+
 	var wg sync.WaitGroup
 
-	var emailFilms []dto.EmailFilm
-
-	for _, f := range films {
+	for fm := range filmModels {
 		wg.Add(1)
 		go func(film model.Film) {
 			defer wg.Done()
@@ -92,14 +94,21 @@ func (c *IMDB) FindFilms(films []model.Film) []dto.EmailFilm {
 				val = c.getFilmData(film)
 				c.cache.Set(cacheKey, val)
 			}
-			emailFilms = append(emailFilms, dto.EmailFromModel(film, val))
 
-		}(f)
+			select {
+			case response <- dto.NewEmailFilm(converter.FromModel(film), val):
+			case <-ctx.Done():
+			}
+
+		}(fm)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(response)
+	}()
 
-	return emailFilms
+	return response
 }
 
 func (c *IMDB) getFilmData(film model.Film) dto.IMDBData {

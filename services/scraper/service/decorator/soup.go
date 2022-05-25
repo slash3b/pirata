@@ -18,8 +18,8 @@ func NewSoupDecorator(client *http.Client) *SoupDecorator {
 	}
 }
 
-func (s *SoupDecorator) GetMovies() ([]dto.Film, error) {
-	var response []dto.Film
+func (s *SoupDecorator) GetMovies() ([]dto.RawFilmData, error) {
+	var response []dto.RawFilmData
 
 	_, err := soup.GetWithClient("https://cineplex.md/lang/en", s.c)
 	if err != nil {
@@ -40,7 +40,7 @@ func (s *SoupDecorator) GetMovies() ([]dto.Film, error) {
 		lang := strings.TrimSpace(movie.Find("span", "class", "overlay__lang").Text())
 		startDate := strings.TrimSpace(movie.Find("div", "class", "startdate").Text())
 
-		filmDTO := dto.Film{
+		filmDTO := dto.RawFilmData{
 			Title: title,
 			Lang:  lang,
 			Date:  startDate,
