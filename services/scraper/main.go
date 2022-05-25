@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"scraper/client"
+	"scraper/metrics"
 	"scraper/service"
 	"scraper/service/cineplex"
 	"scraper/service/cineplex/decorator"
@@ -54,25 +55,25 @@ func init() {
 
 // add cli help flag that describes exit codes (!). Does it necessary?
 func main() {
-	prometheus.MustRegister(metrics...)
+	prometheus.MustRegister(metrics.AllMetrics...)
 
 	db, err := sql.Open("sqlite3", "file:./pirata.db")
 	if err != nil {
-		ScraperErrorsMetric.WithLabelValues("unable_to_establish_db_connection").Inc()
+		metrics.ScraperErrors.WithLabelValues("unable_to_establish_db_connection").Inc()
 		log.Fatalln(err)
 	}
 
 	defer func() {
 		err = db.Close()
 		if err != nil {
-			ScraperErrorsMetric.WithLabelValues("could_not_close_db_connection").Inc()
+			metrics.ScraperErrors.WithLabelValues("could_not_close_db_connection").Inc()
 			log.Fatalln(err)
 		}
 	}()
 
 	err = dbMigrationUp(db)
 	if err != nil {
-		ScraperErrorsMetric.WithLabelValues("migration_failed").Inc()
+		metrics.ScraperErrors.WithLabelValues("migration_failed").Inc()
 		log.Fatalln(err)
 	}
 
@@ -81,14 +82,14 @@ func main() {
 
 	httpClient, err := client.NewHttpClientWithCookies()
 	if err != nil {
-		ScraperErrorsMetric.WithLabelValues("unable_to_create_http_client_with_cookies").Inc()
+		metrics.ScraperErrors.WithLabelValues("unable_to_create_http_client_with_cookies").Inc()
 		log.Fatalln(err)
 	}
 
 	soupService := decorator.NewSoupDecorator(httpClient)
 	scraperService := cineplex.NewScraper(filmRepo, soupService)
 	if err != nil {
-		ScraperErrorsMetric.WithLabelValues("unable_to_create_scraper").Inc()
+		metrics.ScraperErrors.WithLabelValues("unable_to_create_scraper").Inc()
 		log.Fatalln(err)
 	}
 
@@ -111,7 +112,7 @@ func main() {
 		http.Handle("/metrics", promhttp.Handler())
 		err = http.ListenAndServe(":2112", nil)
 		if err != nil {
-			ScraperErrorsMetric.WithLabelValues("unable_to_start_metrics").Inc()
+			metrics.ScraperErrors.WithLabelValues("unable_to_start_metrics").Inc()
 			log.Println(fmt.Errorf("unable to start metrics %v", err))
 		}
 	}()
@@ -119,11 +120,11 @@ func main() {
 	log.Println("Scraper started!")
 	err = process(scraperService, imdbService, mailerService) // this process should be another service so I can do myService.Scrape() // or not ?
 	if err != nil {
-		ScraperErrorsMetric.WithLabelValues("could_not_run_scraper_process").Inc()
+		metrics.ScraperErrors.WithLabelValues("could_not_run_scraper_process").Inc()
 		log.Println(err)
 	}
 
-	ScraperHeartbeatMetric.Inc()
+	metrics.ScraperHeartbeat.Inc()
 	// learn about proper context propagation
 	// syscall.SIGHUP
 	// possibly make ticker change on like the do in caddy and prometheus
@@ -138,10 +139,10 @@ func main() {
 				done <- struct{}{}
 				return
 			case <-ticker.C:
-				ScraperHeartbeatMetric.Inc()
+				metrics.ScraperHeartbeat.Inc()
 				err = process(scraperService, imdbService, mailerService)
 				if err != nil {
-					ScraperErrorsMetric.WithLabelValues("could_not_run_scraper_process").Inc()
+					metrics.ScraperErrors.WithLabelValues("could_not_run_scraper_process").Inc()
 					log.Println(err)
 				}
 			}
@@ -155,13 +156,13 @@ func main() {
 
 // pipeline pattern may be ?
 func process(scraper *cineplex.Scraper, imdb *service.IMDB, mailer service.Sender) error {
-	timer := prometheus.NewTimer(ScraperLatencyMetric)
+	timer := prometheus.NewTimer(metrics.ScraperLatency)
 
 	defer timer.ObserveDuration()
 
 	newFilms, err := scraper.GetAllFilms()
 	if err != nil {
-		ScraperErrorsMetric.WithLabelValues("scraper_could_not_get_films").Inc()
+		metrics.ScraperErrors.WithLabelValues("scraper_could_not_get_films").Inc()
 		return err
 	}
 
@@ -170,7 +171,7 @@ func process(scraper *cineplex.Scraper, imdb *service.IMDB, mailer service.Sende
 
 		err = mailer.Send(emailFilms)
 		if err != nil {
-			ScraperErrorsMetric.WithLabelValues("could_not_send_email").Inc()
+			metrics.ScraperErrors.WithLabelValues("could_not_send_email").Inc()
 			return err
 		}
 	}

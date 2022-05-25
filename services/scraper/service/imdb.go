@@ -14,7 +14,7 @@ import (
 	"github.com/anaskhan96/soup"
 )
 
-const cacheCapacity = 50
+const cacheCapacity = 20
 
 type IMDB struct {
 	c     *http.Client
