@@ -58,6 +58,10 @@ func (m *Mailer) Send(emailFilms <-chan dto.EmailFilm) error {
 		films = append(films, ef)
 	}
 
+	if len(films) == 0 {
+		return nil
+	}
+
 	err = tpl.Execute(wr, films)
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("could_not_execute_email_template").Inc()
