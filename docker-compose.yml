@@ -6,11 +6,32 @@ services:
     build: services/scraper
     env_file:
       - services/scraper/.env
+    volumes:
+      - type: bind
+        source: ./services/scraper/pirata.db
+        target: /app/pirata.db
   prometheus:
     container_name: prometheus
     build: services/prometheus
-    network_mode: host
+    ports:
+      - "9090:9090"
   grafana:
     container_name: grafana
     image: grafana/grafana-enterprise
-    network_mode: host
+    ports:
+      - "3000:3000"
+  api:
+    container_name: api
+    build: services/api
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: bind
+        source: ./services/scraper/pirata.db
+        target: /app/pirata.db
+
+
+
+# add this to prod:
+# https://github.com/google/cadvisor (?) -- this is for containers
+# https://github.com/prometheus/node_exporter -- this is for machine
