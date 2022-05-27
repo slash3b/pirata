@@ -2,6 +2,7 @@ package repos
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/slash3b/pirata/api/model"
 	"gorm.io/gorm"
@@ -12,25 +13,25 @@ type Repository interface {
 }
 
 type FilmsRepository struct {
-	conn *gorm.DB
+	db *gorm.DB
 }
 
 func NewFilmsRepository(c *gorm.DB) *FilmsRepository {
-	return &FilmsRepository{conn: c}
+	return &FilmsRepository{db: c}
 }
 
-func (repo *FilmsRepository) GetAll(ctx context.Context) []model.Film {
+func (fr *FilmsRepository) GetAll(ctx context.Context) ([]model.Film, error) {
 	var films []model.Film
 
 	select {
 	case <-ctx.Done():
-		return nil
+		return films, fmt.Errorf("cancelled context")
 	default:
-		result := repo.conn.Order("register_date desc").Find(&films)
+		result := fr.db.Limit(10).Order("id desc").Find(&films)
 		if result.Error != nil {
-			panic(result.Error)
+			return films, result.Error
 		}
 	}
 
-	return films
+	return films, nil
 }

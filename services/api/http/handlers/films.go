@@ -5,16 +5,22 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/slash3b/pirata/api/repository"
+	"github.com/slash3b/pirata/api/repository/repos"
 
 	"github.com/slash3b/pirata/api/model"
 )
+
+var repo *repos.FilmsRepository
+
+func SetRepo(r *repos.FilmsRepository) {
+	repo = r
+}
 
 func Films(w http.ResponseWriter, r *http.Request) {
 	var allFilms []model.Film
 
 	// add error handling
-	allFilms = repository.RepoService.FilmsRepo.GetAll(context.Background())
+	allFilms, _ = repo.GetAll(context.Background())
 
 	jsonResult, err := json.Marshal(allFilms)
 	if err != nil {
