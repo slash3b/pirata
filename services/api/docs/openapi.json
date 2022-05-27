@@ -1,0 +1,37 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Pirata API",
+    "description": "Toy api that shows newly added english films in Cineplex movie theater [Moldova]",
+    "version": "0.1",
+    "license": {
+      "name": "CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)",
+      "url": "100.74.237.116.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://100.74.237.116:8080/api/v1"
+    }
+  ],
+  "paths": {
+    "/films": {
+      "get": {
+        "tags": [
+          "Films"
+        ],
+        "summary": "Get all films in english",
+        "description": "Returns top 5 upcoming movies at max in Cineplex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "500": {
+            "description": "Server side error"
+          }
+        }
+      }
+    }
+  },
+  "components": {}
+}
