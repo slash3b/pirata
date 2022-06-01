@@ -1,19 +1,16 @@
 package service
 
 import (
+	"common/dto"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/anaskhan96/soup"
+	"imdb/cache"
 	"net/http"
 	"net/url"
-	"scraper/cache"
-	"scraper/converter"
-	"scraper/dto"
-	"scraper/storage/model"
 	"strings"
 	"sync"
-
-	"github.com/anaskhan96/soup"
 )
 
 const cacheCapacity = 20
@@ -78,29 +75,30 @@ func (c *IMDB) search(title string) (soup.Root, error) {
 	return soup.HTMLParse(res), nil
 }
 
-func (c *IMDB) FindFilms(ctx context.Context, filmModels <-chan model.Film) <-chan dto.EmailFilm {
-	response := make(chan dto.EmailFilm)
+func (c *IMDB) FindFilms(ctx context.Context, titles []string) <-chan dto.IMDBData {
+	response := make(chan dto.IMDBData)
 
 	var wg sync.WaitGroup
 
-	for fm := range filmModels {
+	for _, ft := range titles {
 		wg.Add(1)
-		go func(film model.Film) {
+		go func(t string) {
 			defer wg.Done()
 
-			cacheKey := strings.ToLower(film.Title)
-			val, err := c.cache.Get(cacheKey)
-			if err != nil {
-				val = c.getFilmData(film)
-				c.cache.Set(cacheKey, val)
+			cacheKey := strings.ToLower(t)
+			data, err := c.cache.Get(cacheKey)
+			if err != nil { // also may be check specific error type ? :think:
+				data = c.getFilmData(t)
+				c.cache.Set(cacheKey, data)
 			}
 
+			// so here data is always available ? does it makes sense to have select like this here ?
 			select {
-			case response <- dto.NewEmailFilm(converter.FromModel(film), val):
+			case response <- data:
 			case <-ctx.Done():
 			}
 
-		}(fm)
+		}(ft)
 	}
 
 	go func() {
@@ -111,11 +109,11 @@ func (c *IMDB) FindFilms(ctx context.Context, filmModels <-chan model.Film) <-ch
 	return response
 }
 
-func (c *IMDB) getFilmData(film model.Film) dto.IMDBData {
+func (c *IMDB) getFilmData(ft string) dto.IMDBData {
 
 	var data dto.IMDBData
 
-	root, err := c.search(film.Title)
+	root, err := c.search(ft)
 	if err != nil {
 		return data
 	}

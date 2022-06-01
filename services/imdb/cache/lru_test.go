@@ -1,7 +1,7 @@
 package cache_test
 
 import (
-	"scraper/cache"
+	"imdb/cache"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

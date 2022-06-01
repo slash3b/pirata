@@ -3,7 +3,7 @@ package cache
 import (
 	"container/list"
 	"fmt"
-	"scraper/metrics"
+	"imdb/metrics"
 	"sync"
 )
 
@@ -31,14 +31,14 @@ func NewLRU[K comparable, V any](capacity int) *LRU[K, V] {
 func (lr *LRU[K, V]) Get(key K) (V, error) {
 	el, ok := lr.m[key]
 	if !ok {
-		metrics.ScraperCache.Dec()
-		metrics.ScraperCacheEvent.WithLabelValues("cache_miss").Inc()
+		metrics.HitMissCache.Dec()
+		metrics.CacheEvent.WithLabelValues("cache_miss").Inc()
 		// https://stackoverflow.com/questions/70585852/return-default-value-for-generic-type
 		return *new(V), fmt.Errorf("no cache entry under key : %v", key)
 	}
 
-	metrics.ScraperCache.Inc()
-	metrics.ScraperCacheEvent.WithLabelValues("cache_hit").Inc()
+	metrics.HitMissCache.Inc()
+	metrics.CacheEvent.WithLabelValues("cache_hit").Inc()
 	lr.mutex.Lock()
 	defer lr.mutex.Unlock()
 	lr.l.MoveToFront(el)
@@ -49,7 +49,7 @@ func (lr *LRU[K, V]) Get(key K) (V, error) {
 func (lr *LRU[K, V]) Set(k K, v V) {
 
 	if el, ok := lr.m[k]; ok {
-		metrics.ScraperCacheEvent.WithLabelValues("already_set").Inc()
+		metrics.CacheEvent.WithLabelValues("already_set").Inc()
 		lr.mutex.Lock()
 		defer lr.mutex.Unlock()
 		lr.l.MoveToFront(el)
@@ -57,7 +57,7 @@ func (lr *LRU[K, V]) Set(k K, v V) {
 	}
 
 	if lr.l.Len() == lr.cap {
-		metrics.ScraperCacheEvent.WithLabelValues("full_cache_lru_element_evicted").Inc()
+		metrics.CacheEvent.WithLabelValues("full_cache_lru_element_evicted").Inc()
 		backEl := lr.l.Back()
 
 		pair := backEl.Value.(LRUEntry[K, V])
@@ -68,7 +68,7 @@ func (lr *LRU[K, V]) Set(k K, v V) {
 		lr.mutex.Unlock()
 	}
 
-	metrics.ScraperCacheEvent.WithLabelValues("cache_set").Inc()
+	metrics.CacheEvent.WithLabelValues("cache_set").Inc()
 	pair := LRUEntry[K, V]{
 		K: k,
 		V: v,
