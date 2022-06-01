@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package imdb;
+
+option go_package="common/proto";
+
+service IMDB {
+  rpc GetFilms(FilmTitles) returns (stream Film) {}
+}
+
+message FilmTitles {
+  string Titles = 1;
+}
+
+message Film {
+  string Poster = 1;
+  string Plot = 2;
+  string Runtime = 3;
+  string Genres = 4;
+}
