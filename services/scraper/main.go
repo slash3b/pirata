@@ -9,6 +9,10 @@ import (
 	"os/signal"
 	"scraper/metrics"
 	"scraper/service"
+	"scraper/service/publisher"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"syscall"
 	"time"
@@ -26,7 +30,7 @@ var migrationFiles embed.FS
 var (
 	scraper *service.Scraper
 	imdb    *service.IMDB
-	mailer  *service.Mailer
+	mailer  *publisher.Mail
 )
 
 func main() {
@@ -43,9 +47,21 @@ func main() {
 		}
 	}()
 
+	conn, err := grpc.Dial(":50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("did not connect: %v \n", err)
+	}
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			metrics.ScraperErrors.WithLabelValues("could_not_close_grpc_connection").Inc()
+			log.Println(err)
+		}
+	}()
+
 	metrics.Start()
 
-	initServices(db)
+	initServices(db, conn)
 
 	ticker := time.NewTicker(time.Minute * 60)
 	defer ticker.Stop()
@@ -55,14 +71,9 @@ func main() {
 
 	log.Println("Scraper started!")
 
-	err = process(scraper, imdb, mailer)
-	if err != nil {
-		metrics.ScraperErrors.WithLabelValues("scraper_error").Inc()
-		log.Println(err)
-	}
+	process(scraper, imdb, mailer)
 
 	metrics.ScraperHeartbeat.Inc()
-	// learn about proper context propagation
 	// syscall.SIGHUP
 	// possibly make ticker change on like the do in caddy and prometheus
 
@@ -77,27 +88,27 @@ func main() {
 				return
 			case <-ticker.C:
 				metrics.ScraperHeartbeat.Inc()
-				err = process(scraper, imdb, mailer)
-				if err != nil {
-					metrics.ScraperErrors.WithLabelValues("scraper_error").Inc()
-					log.Println(err)
-				}
+				process(scraper, imdb, mailer)
 			}
 		}
 	}()
 
 	<-done
 
-	fmt.Println("Done!")
+	fmt.Println("Scraper service stopped!")
 }
 
 // process works using kind of "pipeline" pattern, or smth close
-func process(scraper *service.Scraper, imdb *service.IMDB, mailer service.Sender) error {
+func process(scraper *service.Scraper, imdb *service.IMDB, mailPublisher *publisher.Mail) {
 	timer := prometheus.NewTimer(metrics.ScraperLatency)
 	defer timer.ObserveDuration()
 
 	ctx, release := context.WithTimeout(context.Background(), time.Second*30)
 	defer release()
 
-	return mailer.Send(imdb.FindFilms(scraper.GetFilms(ctx)))
+	err := mailPublisher.Send(imdb.GetFilms(scraper.GetFilms(ctx)))
+	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("scraper_error").Inc()
+		log.Println(err)
+	}
 }

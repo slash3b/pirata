@@ -1,27 +1,26 @@
 package main
 
 import (
+	"common/client"
+	"common/proto"
 	"database/sql"
 	"log"
-	"scraper/client"
-	"scraper/config"
 	"scraper/metrics"
 	"scraper/service"
 	"scraper/service/decorator"
+
+	"google.golang.org/grpc"
 
 	"scraper/storage/repository"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-
-	"github.com/mailjet/mailjet-apiv3-go/v3"
 )
 
-func initServices(db *sql.DB) {
+func initServices(db *sql.DB, grpcConn grpc.ClientConnInterface) {
 
 	filmRepo := repository.NewFilmStorageRepository(db)
-	emailRepo := repository.NewSubscriberRepository(db)
 
 	httpClient, err := client.NewHttpClientWithCookies()
 	if err != nil {
@@ -36,20 +35,22 @@ func initServices(db *sql.DB) {
 		log.Fatalln(err)
 	}
 
-	imdb = service.NewIMDB(httpClient)
+	imdb = service.NewIMDB(proto.NewIMDBClient(grpcConn))
 
-	env, err := config.GetEnv()
-	if err != nil {
-		metrics.ScraperErrors.WithLabelValues("incomplete_environment").Inc()
-		log.Fatalln(err)
-	}
+	//emailRepo := repository.NewSubscriberRepository(db)
 
-	mailjetClient := mailjet.NewMailjetClient(env.MailjetPubKey, env.MailJetPrivateKey)
+	//env, err := config.GetEnv()
+	//if err != nil {
+	//	metrics.ScraperErrors.WithLabelValues("incomplete_environment").Inc()
+	//	log.Fatalln(err)
+	//}
 
-	mailer = service.NewMailer(mailjetClient, service.MailerConfig{
-		FromEmail: env.FromEmail,
-		FromName:  env.FromName,
-	}, emailRepo)
+	//mailjetClient := mailjet.NewMailjetClient(env.MailjetPubKey, env.MailJetPrivateKey)
+	//
+	//mailer = service.NewMailer(mailjetClient, service.MailerConfig{
+	//	FromEmail: env.FromEmail,
+	//	FromName:  env.FromName,
+	//}, emailRepo)
 }
 
 func initAndMaintainDB() (*sql.DB, error) {

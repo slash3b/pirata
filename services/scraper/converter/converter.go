@@ -1,6 +1,7 @@
 package converter
 
 import (
+	commonDto "common/dto"
 	"fmt"
 	"scraper/dto"
 	"scraper/storage/model"
@@ -63,7 +64,7 @@ func FromDTO(dto dto.RawFilmData) (model.Film, error) {
 	return film, nil
 }
 
-func FromModel(m model.Film) dto.FilmData {
+func FromModel(m model.Film) commonDto.FilmData {
 	var langEmoji string
 	switch strings.ToLower(m.Lang) {
 	case "ru":
@@ -76,7 +77,7 @@ func FromModel(m model.Film) dto.FilmData {
 		langEmoji = strings.ToUpper(m.Lang)
 	}
 
-	return dto.FilmData{
+	return commonDto.FilmData{
 		Title:       fmt.Sprintf("%s, %s", m.Title, m.Dimension),
 		Lang:        langEmoji,
 		ReleaseDate: fmt.Sprintf("%s %d, %s", m.StartDate.Month(), m.StartDate.Day(), m.StartDate.Weekday()),
