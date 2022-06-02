@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IMDBClient interface {
-	GetFilms(ctx context.Context, in *FilmTitles, opts ...grpc.CallOption) (IMDB_GetFilmsClient, error)
+	GetFilm(ctx context.Context, in *FilmTitle, opts ...grpc.CallOption) (*Film, error)
 }
 
 type iMDBClient struct {
@@ -33,43 +33,20 @@ func NewIMDBClient(cc grpc.ClientConnInterface) IMDBClient {
 	return &iMDBClient{cc}
 }
 
-func (c *iMDBClient) GetFilms(ctx context.Context, in *FilmTitles, opts ...grpc.CallOption) (IMDB_GetFilmsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &IMDB_ServiceDesc.Streams[0], "/imdb.IMDB/GetFilms", opts...)
+func (c *iMDBClient) GetFilm(ctx context.Context, in *FilmTitle, opts ...grpc.CallOption) (*Film, error) {
+	out := new(Film)
+	err := c.cc.Invoke(ctx, "/imdb.IMDB/GetFilm", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &iMDBGetFilmsClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type IMDB_GetFilmsClient interface {
-	Recv() (*Film, error)
-	grpc.ClientStream
-}
-
-type iMDBGetFilmsClient struct {
-	grpc.ClientStream
-}
-
-func (x *iMDBGetFilmsClient) Recv() (*Film, error) {
-	m := new(Film)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // IMDBServer is the server API for IMDB service.
 // All implementations must embed UnimplementedIMDBServer
 // for forward compatibility
 type IMDBServer interface {
-	GetFilms(*FilmTitles, IMDB_GetFilmsServer) error
+	GetFilm(context.Context, *FilmTitle) (*Film, error)
 	mustEmbedUnimplementedIMDBServer()
 }
 
@@ -77,8 +54,8 @@ type IMDBServer interface {
 type UnimplementedIMDBServer struct {
 }
 
-func (UnimplementedIMDBServer) GetFilms(*FilmTitles, IMDB_GetFilmsServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetFilms not implemented")
+func (UnimplementedIMDBServer) GetFilm(context.Context, *FilmTitle) (*Film, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFilm not implemented")
 }
 func (UnimplementedIMDBServer) mustEmbedUnimplementedIMDBServer() {}
 
@@ -93,25 +70,22 @@ func RegisterIMDBServer(s grpc.ServiceRegistrar, srv IMDBServer) {
 	s.RegisterService(&IMDB_ServiceDesc, srv)
 }
 
-func _IMDB_GetFilms_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(FilmTitles)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _IMDB_GetFilm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FilmTitle)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(IMDBServer).GetFilms(m, &iMDBGetFilmsServer{stream})
-}
-
-type IMDB_GetFilmsServer interface {
-	Send(*Film) error
-	grpc.ServerStream
-}
-
-type iMDBGetFilmsServer struct {
-	grpc.ServerStream
-}
-
-func (x *iMDBGetFilmsServer) Send(m *Film) error {
-	return x.ServerStream.SendMsg(m)
+	if interceptor == nil {
+		return srv.(IMDBServer).GetFilm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/imdb.IMDB/GetFilm",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IMDBServer).GetFilm(ctx, req.(*FilmTitle))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // IMDB_ServiceDesc is the grpc.ServiceDesc for IMDB service.
@@ -120,13 +94,12 @@ func (x *iMDBGetFilmsServer) Send(m *Film) error {
 var IMDB_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "imdb.IMDB",
 	HandlerType: (*IMDBServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "GetFilms",
-			Handler:       _IMDB_GetFilms_Handler,
-			ServerStreams: true,
+			MethodName: "GetFilm",
+			Handler:    _IMDB_GetFilm_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "imdb.proto",
 }

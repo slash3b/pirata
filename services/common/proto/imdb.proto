@@ -5,11 +5,11 @@ package imdb;
 option go_package="common/proto";
 
 service IMDB {
-  rpc GetFilms(FilmTitles) returns (stream Film) {}
+  rpc GetFilm(FilmTitle) returns (Film) {}
 }
 
-message FilmTitles {
-  string Titles = 1;
+message FilmTitle {
+  string Title = 1;
 }
 
 message Film {
