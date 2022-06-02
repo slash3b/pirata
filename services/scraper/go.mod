@@ -6,6 +6,8 @@ require (
 	github.com/anaskhan96/soup v1.2.5
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/golang/mock v1.6.0
+	github.com/mailjet/mailjet-apiv3-go v0.0.0-20201009050126-c24bc15a9394
+	github.com/mailjet/mailjet-apiv3-go/v3 v3.2.0
 	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/prometheus/client_golang v1.12.1
 	github.com/stretchr/testify v1.7.0

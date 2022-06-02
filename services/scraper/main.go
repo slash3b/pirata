@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"scraper/metrics"
 	"scraper/service"
-	"scraper/service/publisher"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,7 +29,7 @@ var migrationFiles embed.FS
 var (
 	scraper *service.Scraper
 	imdb    *service.IMDB
-	mailer  *publisher.Mail
+	mailer  *service.Mailer
 )
 
 func main() {
@@ -47,7 +46,7 @@ func main() {
 		}
 	}()
 
-	conn, err := grpc.Dial(":50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("imdb:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v \n", err)
 	}
@@ -99,14 +98,14 @@ func main() {
 }
 
 // process works using kind of "pipeline" pattern, or smth close
-func process(scraper *service.Scraper, imdb *service.IMDB, mailPublisher *publisher.Mail) {
+func process(scraper *service.Scraper, imdb *service.IMDB, mailer *service.Mailer) {
 	timer := prometheus.NewTimer(metrics.ScraperLatency)
 	defer timer.ObserveDuration()
 
 	ctx, release := context.WithTimeout(context.Background(), time.Second*30)
 	defer release()
 
-	err := mailPublisher.Send(imdb.GetFilms(scraper.GetFilms(ctx)))
+	err := mailer.Send(imdb.GetFilms(scraper.GetFilms(ctx)))
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("scraper_error").Inc()
 		log.Println(err)

@@ -5,6 +5,7 @@ import (
 	"common/proto"
 	"database/sql"
 	"log"
+	"scraper/config"
 	"scraper/metrics"
 	"scraper/service"
 	"scraper/service/decorator"
@@ -16,6 +17,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/mailjet/mailjet-apiv3-go/v3"
 )
 
 func initServices(db *sql.DB, grpcConn grpc.ClientConnInterface) {
@@ -37,20 +39,20 @@ func initServices(db *sql.DB, grpcConn grpc.ClientConnInterface) {
 
 	imdb = service.NewIMDB(proto.NewIMDBClient(grpcConn))
 
-	//emailRepo := repository.NewSubscriberRepository(db)
+	emailRepo := repository.NewSubscriberRepository(db)
 
-	//env, err := config.GetEnv()
-	//if err != nil {
-	//	metrics.ScraperErrors.WithLabelValues("incomplete_environment").Inc()
-	//	log.Fatalln(err)
-	//}
+	env, err := config.GetEnv()
+	if err != nil {
+		metrics.ScraperErrors.WithLabelValues("incomplete_environment").Inc()
+		log.Fatalln(err)
+	}
 
-	//mailjetClient := mailjet.NewMailjetClient(env.MailjetPubKey, env.MailJetPrivateKey)
-	//
-	//mailer = service.NewMailer(mailjetClient, service.MailerConfig{
-	//	FromEmail: env.FromEmail,
-	//	FromName:  env.FromName,
-	//}, emailRepo)
+	mailjetClient := mailjet.NewMailjetClient(env.MailjetPubKey, env.MailJetPrivateKey)
+
+	mailer = service.NewMailer(mailjetClient, service.MailerConfig{
+		FromEmail: env.FromEmail,
+		FromName:  env.FromName,
+	}, emailRepo)
 }
 
 func initAndMaintainDB() (*sql.DB, error) {

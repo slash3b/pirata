@@ -3,10 +3,10 @@ package service
 import (
 	"bufio"
 	"bytes"
+	"common/dto"
 	"embed"
 	"html/template"
 	"log"
-	"scraper/dto"
 	"scraper/metrics"
 	"scraper/storage/repository"
 
