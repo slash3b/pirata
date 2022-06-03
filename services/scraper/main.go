@@ -62,7 +62,7 @@ func main() {
 
 	initServices(db, conn)
 
-	ticker := time.NewTicker(time.Minute * 60)
+	ticker := time.NewTicker(time.Minute * 1)
 	defer ticker.Stop()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)

@@ -26,24 +26,24 @@ func (i *IMDB) GetFilms(ctx context.Context, films <-chan model.Film) <-chan dto
 	for f := range films {
 
 		wg.Add(1)
-		go func() {
+		go func(f model.Film) {
 			defer wg.Done()
 
-		}()
-		fr, err := i.cl.GetFilm(ctx, &proto.FilmTitle{Title: f.Title})
-		if err != nil {
-			fmt.Println(err) // how to deal with error here ?
-			continue
-		}
+			fr, err := i.cl.GetFilm(ctx, &proto.FilmTitle{Title: f.Title})
+			if err != nil {
+				fmt.Println(err) // how to deal with error here ?
+				return
+			}
 
-		data := dto.IMDBData{
-			Poster:  fr.Poster,
-			Plot:    fr.Plot,
-			Runtime: fr.Runtime,
-			Genres:  fr.Genres,
-		}
+			data := dto.IMDBData{
+				Poster:  fr.Poster,
+				Plot:    fr.Plot,
+				Runtime: fr.Runtime,
+				Genres:  fr.Genres,
+			}
 
-		res <- dto.NewEmailFilm(converter.FromModel(f), data)
+			res <- dto.NewEmailFilm(converter.FromModel(f), data)
+		}(f)
 	}
 
 	go func() {

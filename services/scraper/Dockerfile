@@ -1,14 +1,16 @@
 # syntax=docker/dockerfile:1.2
 FROM golang:1.18-alpine as builder_img_
 
+COPY services/common /go/src/common
+COPY services/scraper/ /go/src/scraper
+
+WORKDIR /go/src/scraper
+
 RUN apk add --no-cache --update gcc g++
 
-WORKDIR /go/src
-
-COPY go.mod go.sum ./
 
 RUN --mount=type=cache,target=/go/pkg \
-      go mod download && go mod verify
+      go mod download
 
 COPY . .
 

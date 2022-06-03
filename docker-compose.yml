@@ -3,13 +3,18 @@ version: "3.9"
 services:
   scraper:
     container_name: scraper
-    build: services/scraper
+    image: registry.digitalocean.com/pirata/scraper:latest
     env_file:
       - services/scraper/.env
     volumes:
       - type: bind
         source: ./services/scraper/pirata.db
         target: /app/pirata.db
+    depends_on:
+      - imdb
+  imdb:
+    container_name: imdb
+    image: registry.digitalocean.com/pirata/imdb:latest
   prometheus:
     container_name: prometheus
     build: services/prometheus
@@ -29,9 +34,5 @@ services:
       - type: bind
         source: ./services/scraper/pirata.db
         target: /app/pirata.db
-
-
-
-# add this to prod:
-# https://github.com/google/cadvisor (?) -- this is for containers
-# https://github.com/prometheus/node_exporter -- this is for machine
+    depends_on:
+      - imdb
