@@ -3,14 +3,13 @@ FROM golang:1.18-alpine as builder_img_
 
 RUN apk add --no-cache --update gcc g++
 
-WORKDIR /go/src
+COPY services/common /go/src/common
+COPY services/api/ /go/src/api
 
-COPY go.mod go.sum ./
+WORKDIR /go/src/api
 
 RUN --mount=type=cache,target=/go/pkg \
-      go mod download && go mod verify
-
-COPY . .
+    go mod download
 
 RUN --mount=type=cache,target=/go/pkg \
     CGO_ENABLED=1 go build -v -o /go/bin/api .
