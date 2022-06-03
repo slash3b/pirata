@@ -3,7 +3,7 @@ package service
 import (
 	"common/proto"
 	"context"
-	"strings"
+	"fmt"
 )
 
 type Grpc struct {
@@ -15,23 +15,19 @@ func NewIMDBGrpc(i *IMDB) Grpc {
 	return Grpc{i: i}
 }
 
-func (i Grpc) GetFilms(titles *proto.FilmTitles, srv proto.IMDB_GetFilmsServer) error {
+func (i Grpc) GetFilm(ctx context.Context, title *proto.FilmTitle) (*proto.Film, error) {
 
-	grpcTitles := strings.Split(titles.GetTitles(), ",")
+	for filmData := range i.i.FindFilms(ctx, []string{title.GetTitle()}) {
 
-	for v := range i.i.FindFilms(context.Background(), grpcTitles) {
 		film := &proto.Film{
-			Poster:  v.Poster,
-			Plot:    v.Plot,
-			Runtime: v.Runtime,
-			Genres:  v.Genres,
+			Poster:  filmData.Poster,
+			Plot:    filmData.Plot,
+			Runtime: filmData.Runtime,
+			Genres:  filmData.Genres,
 		}
 
-		err := srv.Send(film)
-		if err != nil {
-			return err
-		}
+		return film, nil
 	}
 
-	return nil
+	return nil, fmt.Errorf("unable to find film by title")
 }
