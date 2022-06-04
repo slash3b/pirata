@@ -62,7 +62,7 @@ func main() {
 
 	initServices(db, conn)
 
-	ticker := time.NewTicker(time.Minute * 1)
+	ticker := time.NewTicker(time.Minute * 60) // todo: make the program reload when env variable changes!
 	defer ticker.Stop()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)

@@ -3,8 +3,9 @@ package cache
 import (
 	"container/list"
 	"fmt"
-	"imdb/metrics"
 	"sync"
+
+	"imdb/metrics"
 )
 
 type LRU[K comparable, V any] struct {
@@ -46,14 +47,14 @@ func (lr *LRU[K, V]) Get(key K) (V, error) {
 	return el.Value.(LRUEntry[K, V]).V, nil
 }
 
-func (lr *LRU[K, V]) Set(k K, v V) {
-
+func (lr *LRU[K, V]) Set(k K, v V) V {
 	if el, ok := lr.m[k]; ok {
 		metrics.CacheEvent.WithLabelValues("already_set").Inc()
 		lr.mutex.Lock()
 		defer lr.mutex.Unlock()
 		lr.l.MoveToFront(el)
-		return
+
+		return v
 	}
 
 	if lr.l.Len() == lr.cap {
@@ -77,4 +78,6 @@ func (lr *LRU[K, V]) Set(k K, v V) {
 	lr.mutex.Lock()
 	lr.m[k] = lr.l.PushFront(pair)
 	lr.mutex.Unlock()
+
+	return v
 }

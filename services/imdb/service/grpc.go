@@ -1,23 +1,24 @@
 package service
 
 import (
-	"common/proto"
 	"context"
 	"fmt"
+
+	"common/proto"
 )
 
-type Grpc struct {
-	i *IMDB
+type GRPCServer struct {
+	imdbService *IMDB
 	proto.UnimplementedIMDBServer
 }
 
-func NewIMDBGrpc(i *IMDB) Grpc {
-	return Grpc{i: i}
+func NewGRPCServer(i *IMDB) GRPCServer {
+	return GRPCServer{imdbService: i}
 }
 
-func (i Grpc) GetFilm(ctx context.Context, title *proto.FilmTitle) (*proto.Film, error) {
+func (i GRPCServer) GetFilm(ctx context.Context, title *proto.FilmTitle) (*proto.Film, error) {
 
-	for filmData := range i.i.FindFilms(ctx, []string{title.GetTitle()}) {
+	for filmData := range i.imdbService.FindFilms(ctx, []string{title.GetTitle()}) {
 
 		film := &proto.Film{
 			Poster:  filmData.Poster,

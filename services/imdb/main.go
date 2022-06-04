@@ -1,18 +1,19 @@
 package main
 
 import (
-	"common/client"
-	"common/proto"
 	"context"
 	"fmt"
-	"imdb/metrics"
-	"imdb/service"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"common/client"
+	"common/proto"
+	"imdb/metrics"
+	"imdb/service"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -50,9 +51,13 @@ func grcpStart(errCh chan<- error) {
 		errCh <- err
 		return
 	}
+
+	/*
+		Question: how the heck can I turn cache in some sort of an interface ?
+	*/
 	imdbService := service.NewIMDB(cln)
 
-	proto.RegisterIMDBServer(grpcSrv, service.NewIMDBGrpc(imdbService))
+	proto.RegisterIMDBServer(grpcSrv, service.NewGRPCServer(imdbService))
 
 	log.Println("started GRPC server on port 50051")
 	err = grpcSrv.Serve(listener)

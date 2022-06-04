@@ -1,8 +1,9 @@
 package cache_test
 
 import (
-	"imdb/cache"
 	"testing"
+
+	"imdb/cache"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -15,6 +16,11 @@ func TestBasicReplacementTest(t *testing.T) {
 
 	c.Set("foo", 1)
 	v, err := c.Get("foo")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, v)
+
+	c.Set("foo", 1)
+	v, err = c.Get("foo")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, v)
 
@@ -36,4 +42,11 @@ func TestBasicReplacementTest(t *testing.T) {
 	v, err = c.Get("foo")
 	assert.Error(t, err)
 	assert.Equal(t, 0, v)
+}
+
+func BenchmarkReplacementTest(b *testing.B) {
+	c := cache.NewLRU[int, int](20) // what would be an optimal value ?
+	for i := 0; i < b.N; i++ {
+		c.Set(i, i)
+	}
 }

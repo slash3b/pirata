@@ -1,16 +1,18 @@
 package service
 
 import (
-	"common/dto"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/anaskhan96/soup"
-	"imdb/cache"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
+
+	"common/dto"
+	"github.com/anaskhan96/soup"
+	"imdb/cache"
 )
 
 const cacheCapacity = 20
@@ -29,76 +31,30 @@ func NewIMDB(httpClient *http.Client) *IMDB {
 	return &imdb
 }
 
-func (c *IMDB) search(title string) (soup.Root, error) {
-	vals := url.Values{}
-	vals.Add("q", title)
-
-	path := fmt.Sprintf("https://www.imdb.com/find?%s", vals.Encode())
-
-	out, err := soup.GetWithClient(path, c.c)
-	if err != nil {
-
-		return soup.Root{}, err
-	}
-
-	root := soup.HTMLParse(out)
-	allMovies := root.FindAll("tr", "class", "findResult")
-
-	if len(allMovies) == 0 {
-		// if movie info is missing
-		// log it here to be checked later on
-		// log.With("path", path) ... attempted to search for film but could not
-		return soup.Root{}, err
-	}
-
-	firstRow := allMovies[0]
-
-	linkNode := firstRow.Find("a")
-	if linkNode.Error != nil {
-		return soup.Root{}, err
-	}
-
-	attributes := linkNode.Attrs()
-
-	movieTitleLink, ok := attributes["href"]
-	if !ok {
-		return soup.Root{}, errors.New("could not find link to movie")
-	}
-
-	path = fmt.Sprintf("https://www.imdb.com/%s", movieTitleLink)
-
-	res, err := soup.GetWithClient(path, c.c)
-	if err != nil {
-		return soup.Root{}, err
-	}
-
-	return soup.HTMLParse(res), nil
-}
-
 func (c *IMDB) FindFilms(ctx context.Context, titles []string) <-chan dto.IMDBData {
 	response := make(chan dto.IMDBData)
 
 	var wg sync.WaitGroup
 
-	for _, ft := range titles {
+	for _, filmTitle := range titles {
 		wg.Add(1)
 		go func(t string) {
 			defer wg.Done()
 
 			cacheKey := strings.ToLower(t)
 			data, err := c.cache.Get(cacheKey)
-			if err != nil { // also may be check specific error type ? :think:
-				data = c.getFilmData(t)
+			if err != nil {
+				data, err = c.getFilmData(ctx, t)
+				if err != nil {
+					log.Println("error on getting film data", err)
+					return
+				}
 				c.cache.Set(cacheKey, data)
 			}
 
-			// so here data is always available ? does it makes sense to have select like this here ?
-			select {
-			case response <- data:
-			case <-ctx.Done():
-			}
+			response <- data
 
-		}(ft)
+		}(filmTitle)
 	}
 
 	go func() {
@@ -109,13 +65,19 @@ func (c *IMDB) FindFilms(ctx context.Context, titles []string) <-chan dto.IMDBDa
 	return response
 }
 
-func (c *IMDB) getFilmData(ft string) dto.IMDBData {
+func (c *IMDB) getFilmData(ctx context.Context, ft string) (dto.IMDBData, error) {
+
+	select {
+	case <-ctx.Done():
+		return dto.IMDBData{}, fmt.Errorf("context cancelled: %v", ctx.Err())
+	default:
+	}
 
 	var data dto.IMDBData
 
 	root, err := c.search(ft)
 	if err != nil {
-		return data
+		return data, err
 	}
 
 	// Poster
@@ -178,5 +140,51 @@ func (c *IMDB) getFilmData(ft string) dto.IMDBData {
 		data.Genres = strings.Join(genreTags, ", ")
 	}
 
-	return data
+	return data, nil
+}
+
+func (c *IMDB) search(title string) (soup.Root, error) {
+	vals := url.Values{}
+	vals.Add("q", title)
+
+	path := fmt.Sprintf("https://www.imdb.com/find?%s", vals.Encode())
+
+	out, err := soup.GetWithClient(path, c.c)
+	if err != nil {
+
+		return soup.Root{}, err
+	}
+
+	root := soup.HTMLParse(out)
+	allMovies := root.FindAll("tr", "class", "findResult")
+
+	if len(allMovies) == 0 {
+		// if movie info is missing
+		// log it here to be checked later on
+		// log.With("path", path) ... attempted to search for film but could not
+		return soup.Root{}, err
+	}
+
+	firstRow := allMovies[0]
+
+	linkNode := firstRow.Find("a")
+	if linkNode.Error != nil {
+		return soup.Root{}, err
+	}
+
+	attributes := linkNode.Attrs()
+
+	movieTitleLink, ok := attributes["href"]
+	if !ok {
+		return soup.Root{}, errors.New("could not find link to movie")
+	}
+
+	path = fmt.Sprintf("https://www.imdb.com/%s", movieTitleLink)
+
+	res, err := soup.GetWithClient(path, c.c)
+	if err != nil {
+		return soup.Root{}, err
+	}
+
+	return soup.HTMLParse(res), nil
 }
