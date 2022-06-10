@@ -1,3 +1,5 @@
+[![.github/workflows/qc.yml](https://github.com/slash3b/pirata/actions/workflows/qc.yml/badge.svg)](https://github.com/slash3b/pirata/actions/workflows/qc.yml)
+
 ### pirata
 What this is? This project parses local cinema site and sends email to all subscribers about new upcoming films.
 It is a pet-project of mine.   
@@ -21,4 +23,4 @@ Todo:
 - https://github.com/golang-migrate/migrate
 
 ##### Build images
-``
+- todo
