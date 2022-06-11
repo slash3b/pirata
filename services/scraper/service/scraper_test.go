@@ -6,7 +6,6 @@ import (
 	"scraper/service"
 	mock_service "scraper/service/mock"
 	"scraper/storage/model"
-	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -26,7 +25,7 @@ func TestScraper_GetAllFilms_WithMixedResults(t *testing.T) {
 			Lang: "KO",
 			Date: "(10.03.2022)",
 		},
-		{Title: "Foo Bar ",
+		{Title: "Moo Bar ",
 			Lang: "EN",
 			Date: "(10.03.2022)",
 		},
@@ -43,17 +42,11 @@ func TestScraper_GetAllFilms_WithMixedResults(t *testing.T) {
 
 	_, films := scraper.GetFilms(context.Background())
 
-	var wg sync.WaitGroup
+	var filmsCollection []model.Film
+	for f := range films {
+		filmsCollection = append(filmsCollection, f)
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		assert.Equal(t, "Foo Bar", (<-films).Title)
-		// todo: mock time to be able to compare complete DTO struct
-		// fixme: apparently this test became flaky, needs fixing
-	}()
-
-	wg.Wait()
-
+	assert.Len(t, filmsCollection, 1)
+	assert.Equal(t, filmsCollection[0].Title, "Foo Bar")
 }

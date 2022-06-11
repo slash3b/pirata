@@ -34,6 +34,7 @@ func NewScraper(repo FilmStorageRepository, sp Soup) *Scraper {
 func (c *Scraper) GetFilms(ctx context.Context) (context.Context, <-chan model.Film) {
 	response := make(chan model.Film)
 
+	// todo: decide on logger and make it injectable
 	logger := log.Default()
 
 	rawMovies, err := c.s.GetMovies()
