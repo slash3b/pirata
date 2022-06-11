@@ -19,8 +19,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	_ "github.com/mattn/go-sqlite3"
-
-	_ "embed"
 )
 
 //go:embed migrations/*
