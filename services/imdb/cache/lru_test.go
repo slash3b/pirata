@@ -50,3 +50,24 @@ func BenchmarkReplacementTest(b *testing.B) {
 		c.Set(i, i)
 	}
 }
+
+// this one if failing either I wrote it incorrectly or my cache fails in a multithreaded runtime
+// fixme: 
+// Q: how do I test a piece of code with concurrency inside?
+// A: check https://quii.gitbook.io/learn-go-with-tests/go-fundamentals/concurrency
+// https://go.dev/doc/tutorial/fuzz
+/*
+func FuzzReplacementTest(f *testing.F) {
+	c := cache.NewLRU[int, int](20)
+	f.Add(1,1)
+
+	f.Fuzz(func(t *testing.T, a,b int) {
+		c.Set(a,b)
+		v, err :=  c.Get(a)
+
+		assert.NoError(t, err)
+		assert.Equal(t, v, b)
+	})
+	
+}
+*/

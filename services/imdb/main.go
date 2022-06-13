@@ -17,10 +17,13 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
 func main() {
+
+	viper.SetDefault("GRPC_PORT", "50052")
 
 	ctx := context.Background()
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
@@ -39,7 +42,8 @@ func main() {
 }
 
 func grcpStart(errCh chan<- error) {
-	listener, err := net.Listen("tcp", ":50051")
+	grpcPort := viper.GetString("GRPC_PORT")
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +63,7 @@ func grcpStart(errCh chan<- error) {
 
 	proto.RegisterIMDBServer(grpcSrv, service.NewGRPCServer(imdbService))
 
-	log.Println("started GRPC server on port 50051")
+	log.Printf("started GRPC server on port %s", grpcPort)
 	err = grpcSrv.Serve(listener)
 	if err != nil {
 		errCh <- err
