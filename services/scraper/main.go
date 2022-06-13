@@ -49,7 +49,7 @@ func main() {
 		log.Fatalf("did not connect: %v \n", err)
 	}
 	defer func() {
-		err := conn.Close()
+		err = conn.Close()
 		if err != nil {
 			metrics.ScraperErrors.WithLabelValues("could_not_close_grpc_connection").Inc()
 			log.Println(err)
