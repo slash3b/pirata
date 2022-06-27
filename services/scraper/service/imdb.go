@@ -4,18 +4,23 @@ import (
 	"common/dto"
 	"common/proto"
 	"context"
-	"fmt"
 	"scraper/converter"
 	"scraper/storage/model"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 type IMDB struct {
 	cl proto.IMDBClient
+	l  logrus.FieldLogger
 }
 
-func NewIMDB(c proto.IMDBClient) *IMDB {
-	return &IMDB{cl: c}
+func NewIMDB(c proto.IMDBClient, log logrus.FieldLogger) *IMDB {
+	return &IMDB{
+		cl: c,
+		l:  log,
+	}
 }
 
 func (i *IMDB) GetFilms(ctx context.Context, films <-chan model.Film) <-chan dto.EmailFilm {
@@ -31,7 +36,7 @@ func (i *IMDB) GetFilms(ctx context.Context, films <-chan model.Film) <-chan dto
 
 			fr, err := i.cl.GetFilm(ctx, &proto.FilmTitle{Title: f.Title})
 			if err != nil {
-				fmt.Println(err) // how to deal with error here ?
+				i.l.Errorf("could not get IMDB info for %s film, error : %v", f.Title, err)
 				return
 			}
 

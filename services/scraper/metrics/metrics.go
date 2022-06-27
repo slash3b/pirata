@@ -2,14 +2,14 @@ package metrics
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 )
 
-func Start() {
+func Start(logger logrus.FieldLogger) {
 	prometheus.MustRegister(
 		ScraperHeartbeat,
 		ScraperLatency,
@@ -20,11 +20,11 @@ func Start() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Println("metrics available on :2112/metrics")
+		logger.Println("metrics available on :2112/metrics")
 		err := http.ListenAndServe(":2112", nil)
 		if err != nil {
 			ScraperErrors.WithLabelValues("unable_to_start_metrics").Inc()
-			log.Println(fmt.Errorf("unable to start metrics %v", err))
+			logger.Println(fmt.Errorf("unable to start metrics %v", err))
 		}
 	}()
 

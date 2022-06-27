@@ -2,17 +2,20 @@ package repository
 
 import (
 	"database/sql"
-	"log"
 	"scraper/storage/model"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SubscriberRepository struct {
 	db *sql.DB
+	l  logrus.FieldLogger
 }
 
-func NewSubscriberRepository(db *sql.DB) *SubscriberRepository {
+func NewSubscriberRepository(log logrus.FieldLogger, db *sql.DB) *SubscriberRepository {
 	return &SubscriberRepository{
 		db: db,
+		l:  log,
 	}
 }
 
@@ -29,7 +32,7 @@ func (r *SubscriberRepository) GetAllActive() ([]model.Subscriber, error) {
 	defer func(rows *sql.Rows) {
 		err = rows.Close()
 		if err != nil {
-			log.Println(err)
+			r.l.Errorf("could not close *sql.Rows properly: %v", err)
 		}
 	}(rows)
 

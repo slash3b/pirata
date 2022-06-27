@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
-	"log"
 	"scraper/converter"
 	"scraper/dto"
 	"scraper/metrics"
 	"scraper/storage/model"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 type FilmStorageRepository interface {
@@ -15,32 +16,31 @@ type FilmStorageRepository interface {
 	Insert(film model.Film) (model.Film, error)
 }
 
-type Soup interface {
+type MovieFetcher interface {
 	GetMovies() ([]dto.RawFilmData, error)
 }
 
 type Scraper struct {
 	r FilmStorageRepository
-	s Soup
+	s MovieFetcher
+	l logrus.FieldLogger
 }
 
-func NewScraper(repo FilmStorageRepository, sp Soup) *Scraper {
+func NewScraper(repo FilmStorageRepository, sp MovieFetcher, log logrus.FieldLogger) *Scraper {
 	return &Scraper{
 		r: repo,
 		s: sp,
+		l: log,
 	}
 }
 
 func (c *Scraper) GetFilms(ctx context.Context) (context.Context, <-chan model.Film) {
 	response := make(chan model.Film)
 
-	// todo: decide on logger and make it injectable
-	logger := log.Default()
-
 	rawMovies, err := c.s.GetMovies()
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("unable_to_scrape_movies").Inc()
-		logger.Println("unable to scrape movies", err)
+		c.l.Println("unable to scrape movies", err)
 
 		close(response)
 		return ctx, response
@@ -55,7 +55,7 @@ func (c *Scraper) GetFilms(ctx context.Context) (context.Context, <-chan model.F
 			movieModel, err := converter.FromDTO(movieData)
 			if err != nil {
 				metrics.ScraperErrors.WithLabelValues("unable_to_convert_raw_movie_dto").Inc()
-				logger.Println("Unable to convert raw movie DTO", err)
+				c.l.Println("Unable to convert raw movie DTO", err)
 
 				return
 			}
@@ -63,7 +63,7 @@ func (c *Scraper) GetFilms(ctx context.Context) (context.Context, <-chan model.F
 			if !c.r.IsExists(movieModel) {
 				_, err = c.r.Insert(movieModel)
 				if err != nil {
-					logger.Println("unable to insert new rawMovie", movieData, err)
+					c.l.Println("unable to insert new rawMovie", movieData, err)
 					return
 				}
 

@@ -4,7 +4,6 @@ import (
 	"common/client"
 	"common/proto"
 	"database/sql"
-	"log"
 	"scraper/config"
 	"scraper/metrics"
 	"scraper/service"
@@ -18,33 +17,34 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/mailjet/mailjet-apiv3-go/v3"
+	"github.com/sirupsen/logrus"
 )
 
-func initServices(db *sql.DB, grpcConn grpc.ClientConnInterface) {
+func initServices(db *sql.DB, grpcConn grpc.ClientConnInterface, logger logrus.FieldLogger) {
 
 	filmRepo := repository.NewFilmStorageRepository(db)
 
 	httpClient, err := client.NewHttpClientWithCookies()
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("unable_to_create_http_client_with_cookies").Inc()
-		log.Fatalln(err)
+		logger.Fatalln(err)
 	}
 
 	soupService := decorator.NewSoupDecorator(httpClient)
-	scraper = service.NewScraper(filmRepo, soupService)
+	scraper = service.NewScraper(filmRepo, soupService, logger)
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("unable_to_create_scraper").Inc()
-		log.Fatalln(err)
+		logger.Fatalln(err)
 	}
 
-	imdb = service.NewIMDB(proto.NewIMDBClient(grpcConn))
+	imdb = service.NewIMDB(proto.NewIMDBClient(grpcConn), logger)
 
-	emailRepo := repository.NewSubscriberRepository(db)
+	emailRepo := repository.NewSubscriberRepository(logger, db)
 
 	env, err := config.GetEnv()
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("incomplete_environment").Inc()
-		log.Fatalln(err)
+		logger.Fatalln(err)
 	}
 
 	mailjetClient := mailjet.NewMailjetClient(env.MailjetPubKey, env.MailJetPrivateKey)
@@ -52,7 +52,7 @@ func initServices(db *sql.DB, grpcConn grpc.ClientConnInterface) {
 	mailer = service.NewMailer(mailjetClient, service.MailerConfig{
 		FromEmail: env.FromEmail,
 		FromName:  env.FromName,
-	}, emailRepo)
+	}, emailRepo, logger)
 }
 
 func initAndMaintainDB() (*sql.DB, error) {
@@ -88,4 +88,10 @@ func initAndMaintainDB() (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func initLogger(serviceName string) *logrus.Entry {
+	log := logrus.New()
+
+	return log.WithFields(logrus.Fields{"service_name": serviceName})
 }

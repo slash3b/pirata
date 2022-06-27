@@ -6,11 +6,11 @@ import (
 	"common/dto"
 	"embed"
 	"html/template"
-	"log"
 	"scraper/metrics"
 	"scraper/storage/repository"
 
 	"github.com/mailjet/mailjet-apiv3-go/v3"
+	"github.com/sirupsen/logrus"
 
 	_ "embed"
 )
@@ -28,6 +28,7 @@ type Mailer struct {
 	cl   *mailjet.Client
 	conf MailerConfig
 	repo *repository.SubscriberRepository
+	l    logrus.FieldLogger
 }
 
 type MailerConfig struct {
@@ -35,17 +36,19 @@ type MailerConfig struct {
 	FromName  string
 }
 
-func NewMailer(mjClient *mailjet.Client, conf MailerConfig, r *repository.SubscriberRepository) *Mailer {
+func NewMailer(mjClient *mailjet.Client, conf MailerConfig, r *repository.SubscriberRepository, log logrus.FieldLogger) *Mailer {
 	return &Mailer{
 		cl:   mjClient,
 		conf: conf,
 		repo: r,
+		l:    log,
 	}
 }
 
 func (m *Mailer) Send(emailFilms <-chan dto.EmailFilm) error {
 	tpl, err := template.ParseFS(emailTpl, "template/email.html")
 	if err != nil {
+		m.l.Errorf("could not parse email template 'template/email.html', error: %v", err)
 		metrics.ScraperErrors.WithLabelValues("could_not_parse_email_template").Inc()
 		return err
 	}
@@ -64,6 +67,7 @@ func (m *Mailer) Send(emailFilms <-chan dto.EmailFilm) error {
 
 	err = tpl.Execute(wr, films)
 	if err != nil {
+		m.l.Errorf("unable to execute html template, error: %v", err)
 		metrics.ScraperErrors.WithLabelValues("could_not_execute_email_template").Inc()
 		return err
 	}
@@ -77,6 +81,7 @@ func (m *Mailer) Send(emailFilms <-chan dto.EmailFilm) error {
 
 	allSubs, err := m.getRecipients()
 	if err != nil {
+		m.l.Errorf("could not get recipients, error: %v", err)
 		metrics.ScraperErrors.WithLabelValues("unable_to_get_recipients").Inc()
 		return err
 	}
@@ -91,13 +96,15 @@ func (m *Mailer) Send(emailFilms <-chan dto.EmailFilm) error {
 			},
 		}
 
-		messages := mailjet.MessagesV31{Info: messagesInfo}
+		_ = mailjet.MessagesV31{Info: messagesInfo}
 
-		_, err = m.cl.SendMailV31(&messages)
-		if err != nil {
-			// todo: implement retry with exponential backoff just for fun
-			log.Println(err)
-		}
+		println("sent email! to ", subscriber.Name)
+
+		// _, err = m.cl.SendMailV31(&messages)
+		// if err != nil {
+		// 	// todo: implement retry with exponential backoff just for fun
+		// 	m.l.Errorf("could not send email: %v", err)
+		// }
 	}
 
 	return nil

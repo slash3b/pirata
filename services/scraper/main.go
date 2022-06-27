@@ -4,7 +4,6 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"scraper/metrics"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -31,34 +31,40 @@ var (
 )
 
 func main() {
+
+	logger := initLogger("scraper")
+
 	db, err := initAndMaintainDB()
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error(err)
+		os.Exit(1)
 	}
 
 	defer func() {
 		err = db.Close()
 		if err != nil {
 			metrics.ScraperErrors.WithLabelValues("could_not_close_db_connection").Inc()
-			log.Println(err)
+			logger.Errorf("could not close database connection %v", err)
 		}
 	}()
 
 	conn, err := grpc.Dial("imdb:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("did not connect: %v \n", err)
+		logger.Errorf("cound not connect to imdb service", err)
+		os.Exit(1)
 	}
+
 	defer func() {
 		err = conn.Close()
 		if err != nil {
+			logger.Errorf("could not close grpc connection properly", err)
 			metrics.ScraperErrors.WithLabelValues("could_not_close_grpc_connection").Inc()
-			log.Println(err)
 		}
 	}()
 
-	metrics.Start()
+	metrics.Start(logger)
 
-	initServices(db, conn)
+	initServices(db, conn, logger)
 
 	ticker := time.NewTicker(time.Minute * 60) // todo: make the program reload when env variable changes!
 	defer ticker.Stop()
@@ -66,9 +72,9 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
-	log.Println("Scraper started!")
+	logger.Info("Scraper started!")
 
-	process(scraper, imdb, mailer)
+	process(scraper, imdb, mailer, logger)
 
 	metrics.ScraperHeartbeat.Inc()
 	// syscall.SIGHUP
@@ -80,12 +86,13 @@ func main() {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Println("program execution interrupted, exiting")
+				logger.Info("program execution interrupted, exiting")
 				done <- struct{}{}
 				return
 			case <-ticker.C:
 				metrics.ScraperHeartbeat.Inc()
-				process(scraper, imdb, mailer)
+				process(scraper, imdb, mailer, logger)
+				logger.Info("done processing")
 			}
 		}
 	}()
@@ -96,7 +103,7 @@ func main() {
 }
 
 // process works using kind of "pipeline" pattern, or smth close
-func process(scraper *service.Scraper, imdb *service.IMDB, mailer *service.Mailer) {
+func process(scraper *service.Scraper, imdb *service.IMDB, mailer *service.Mailer, logger logrus.FieldLogger) {
 	timer := prometheus.NewTimer(metrics.ScraperLatency)
 	defer timer.ObserveDuration()
 
@@ -106,6 +113,6 @@ func process(scraper *service.Scraper, imdb *service.IMDB, mailer *service.Maile
 	err := mailer.Send(imdb.GetFilms(scraper.GetFilms(ctx)))
 	if err != nil {
 		metrics.ScraperErrors.WithLabelValues("scraper_error").Inc()
-		log.Println(err)
+		logger.Println(err)
 	}
 }
