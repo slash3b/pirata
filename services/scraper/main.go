@@ -50,14 +50,14 @@ func main() {
 
 	conn, err := grpc.Dial("imdb:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Errorf("cound not connect to imdb service", err)
+		logger.Errorf("cound not connect to imdb service, %v", err)
 		os.Exit(1)
 	}
 
 	defer func() {
 		err = conn.Close()
 		if err != nil {
-			logger.Errorf("could not close grpc connection properly", err)
+			logger.Errorf("could not close grpc connection properly %v", err)
 			metrics.ScraperErrors.WithLabelValues("could_not_close_grpc_connection").Inc()
 		}
 	}()

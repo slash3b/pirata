@@ -64,31 +64,31 @@ func (mr *MockFilmStorageRepositoryMockRecorder) IsExists(film interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsExists", reflect.TypeOf((*MockFilmStorageRepository)(nil).IsExists), film)
 }
 
-// MockSoup is a mock of Soup interface.
-type MockSoup struct {
+// MockMovieFetcher is a mock of MovieFetcher interface.
+type MockMovieFetcher struct {
 	ctrl     *gomock.Controller
-	recorder *MockSoupMockRecorder
+	recorder *MockMovieFetcherMockRecorder
 }
 
-// MockSoupMockRecorder is the mock recorder for MockSoup.
-type MockSoupMockRecorder struct {
-	mock *MockSoup
+// MockMovieFetcherMockRecorder is the mock recorder for MockMovieFetcher.
+type MockMovieFetcherMockRecorder struct {
+	mock *MockMovieFetcher
 }
 
-// NewMockSoup creates a new mock instance.
-func NewMockSoup(ctrl *gomock.Controller) *MockSoup {
-	mock := &MockSoup{ctrl: ctrl}
-	mock.recorder = &MockSoupMockRecorder{mock}
+// NewMockMovieFetcher creates a new mock instance.
+func NewMockMovieFetcher(ctrl *gomock.Controller) *MockMovieFetcher {
+	mock := &MockMovieFetcher{ctrl: ctrl}
+	mock.recorder = &MockMovieFetcherMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockSoup) EXPECT() *MockSoupMockRecorder {
+func (m *MockMovieFetcher) EXPECT() *MockMovieFetcherMockRecorder {
 	return m.recorder
 }
 
 // GetMovies mocks base method.
-func (m *MockSoup) GetMovies() ([]dto.RawFilmData, error) {
+func (m *MockMovieFetcher) GetMovies() ([]dto.RawFilmData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMovies")
 	ret0, _ := ret[0].([]dto.RawFilmData)
@@ -97,7 +97,7 @@ func (m *MockSoup) GetMovies() ([]dto.RawFilmData, error) {
 }
 
 // GetMovies indicates an expected call of GetMovies.
-func (mr *MockSoupMockRecorder) GetMovies() *gomock.Call {
+func (mr *MockMovieFetcherMockRecorder) GetMovies() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMovies", reflect.TypeOf((*MockSoup)(nil).GetMovies))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMovies", reflect.TypeOf((*MockMovieFetcher)(nil).GetMovies))
 }

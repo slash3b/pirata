@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +19,7 @@ import (
 func TestScraper_GetAllFilms_WithNewResults(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 
-	mockSoup := mock_service.NewMockSoup(mockCtrl)
+	mockSoup := mock_service.NewMockMovieFetcher(mockCtrl)
 	mockRepo := mock_service.NewMockFilmStorageRepository(mockCtrl)
 
 	mockSoup.EXPECT().GetMovies().Return([]dto.RawFilmData{
@@ -36,7 +37,8 @@ func TestScraper_GetAllFilms_WithNewResults(t *testing.T) {
 
 	mockRepo.EXPECT().Insert(gomock.Any()).Return(model.Film{}, nil).Times(2)
 
-	scraper := service.NewScraper(mockRepo, mockSoup)
+	testLogger, _ := test.NewNullLogger() // not sure I need second param for now
+	scraper := service.NewScraper(mockRepo, mockSoup, testLogger)
 
 	_, films := scraper.GetFilms(context.Background())
 
@@ -75,7 +77,7 @@ func TestScraper_GetAllFilms_WithNewResults(t *testing.T) {
 func TestScraper_GetAllFilms_WithAlreadyExistingResults(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 
-	mockSoup := mock_service.NewMockSoup(mockCtrl)
+	mockSoup := mock_service.NewMockMovieFetcher(mockCtrl)
 	mockRepo := mock_service.NewMockFilmStorageRepository(mockCtrl)
 
 	mockSoup.EXPECT().GetMovies().Return([]dto.RawFilmData{
@@ -91,7 +93,8 @@ func TestScraper_GetAllFilms_WithAlreadyExistingResults(t *testing.T) {
 
 	mockRepo.EXPECT().IsExists(gomock.Any()).Return(true).Times(2)
 
-	scraper := service.NewScraper(mockRepo, mockSoup)
+	testLogger, _ := test.NewNullLogger()
+	scraper := service.NewScraper(mockRepo, mockSoup, testLogger)
 
 	_, films := scraper.GetFilms(context.Background())
 
