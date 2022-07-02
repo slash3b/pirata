@@ -1,12 +1,15 @@
 package service
 
 import (
+	"context"
+	"math/rand"
+	"sync"
+	"time"
+
 	"common/dto"
 	"common/proto"
-	"context"
 	"scraper/converter"
-	"scraper/storage/model"
-	"sync"
+	scraper_dto "scraper/dto"
 
 	"github.com/sirupsen/logrus"
 )
@@ -23,31 +26,35 @@ func NewIMDB(c proto.IMDBClient, log logrus.FieldLogger) *IMDB {
 	}
 }
 
-func (i *IMDB) GetFilms(ctx context.Context, films <-chan model.Film) <-chan dto.EmailFilm {
+func (im *IMDB) GetFilms(ctx context.Context, films <-chan scraper_dto.FilmResponse) <-chan dto.EmailFilm {
 	res := make(chan dto.EmailFilm)
 
 	var wg sync.WaitGroup
 
 	for f := range films {
-
 		wg.Add(1)
-		go func(f model.Film) {
+		go func(f scraper_dto.FilmResponse) {
 			defer wg.Done()
 
-			fr, err := i.cl.GetFilm(ctx, &proto.FilmTitle{Title: f.Title})
-			if err != nil {
-				i.l.Errorf("could not get IMDB info for %s film, error : %v", f.Title, err)
+			// so normally one should make more intelligent decision about what to do with error
+			// but here you can do not much with it. Are you?
+			if f.Error != nil {
 				return
 			}
 
-			data := dto.IMDBData{
-				Poster:  fr.Poster,
-				Plot:    fr.Plot,
-				Runtime: fr.Runtime,
-				Genres:  fr.Genres,
+			imdbFilmData, err := im.getDataWithRetry(ctx, f.Film.Title)
+			if err != nil {
+				im.l.Errorf("could not get IMDB info for %s film, error : %v", f.Film.Title, err)
 			}
 
-			res <- dto.NewEmailFilm(converter.FromModel(f), data)
+			data := dto.IMDBData{
+				Poster:  imdbFilmData.Poster,
+				Plot:    imdbFilmData.Plot,
+				Runtime: imdbFilmData.Runtime,
+				Genres:  imdbFilmData.Genres,
+			}
+
+			res <- dto.NewEmailFilm(converter.FromModel(f.Film), data)
 		}(f)
 	}
 
@@ -57,4 +64,25 @@ func (i *IMDB) GetFilms(ctx context.Context, films <-chan model.Film) <-chan dto
 	}()
 
 	return res
+}
+
+// exponential backoff with jitter
+func (im *IMDB) getDataWithRetry(ctx context.Context, t string) (*proto.Film, error) {
+	var sleepTime int
+	var err error
+
+	protoReq := &proto.FilmTitle{Title: t}
+
+	for i := 0; i < 3; i++ {
+		film, err := im.cl.GetFilm(ctx, protoReq)
+		if err == nil {
+			return film, err
+		}
+
+		jitter := time.Millisecond * time.Duration(rand.Intn(900))
+		time.Sleep(time.Second*1<<sleepTime + jitter)
+		sleepTime++
+	}
+
+	return nil, err
 }

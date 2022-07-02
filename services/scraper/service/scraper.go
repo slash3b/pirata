@@ -34,8 +34,8 @@ func NewScraper(repo FilmStorageRepository, sp MovieFetcher, log logrus.FieldLog
 	}
 }
 
-func (c *Scraper) GetFilms(ctx context.Context) (context.Context, <-chan model.Film) {
-	response := make(chan model.Film)
+func (c *Scraper) GetFilms(ctx context.Context) (context.Context, <-chan dto.FilmResponse) {
+	response := make(chan dto.FilmResponse)
 
 	rawMovies, err := c.s.GetMovies()
 	if err != nil {
@@ -50,26 +50,29 @@ func (c *Scraper) GetFilms(ctx context.Context) (context.Context, <-chan model.F
 	for _, rawMovie := range rawMovies {
 
 		wg.Add(1)
+
 		go func(movieData dto.RawFilmData) {
 			defer wg.Done()
 			movieModel, err := converter.FromDTO(movieData)
 			if err != nil {
 				metrics.ScraperErrors.WithLabelValues("unable_to_convert_raw_movie_dto").Inc()
 				c.l.Println("Unable to convert raw movie DTO", err)
-
+				response <- dto.FilmResponse{Film: movieModel, Error: err}
 				return
 			}
 
 			if !c.r.IsExists(movieModel) {
 				_, err = c.r.Insert(movieModel)
 				if err != nil {
+					metrics.ScraperErrors.WithLabelValues("unable_to_record_movie").Inc()
+					response <- dto.FilmResponse{Film: movieModel, Error: err}
 					c.l.Println("unable to insert new rawMovie", movieData, err)
 					return
 				}
 
 				select {
 				case <-ctx.Done():
-				case response <- movieModel:
+				case response <- dto.FilmResponse{Film: movieModel}:
 				}
 			}
 		}(rawMovie)

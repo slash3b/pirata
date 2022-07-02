@@ -33,6 +33,7 @@ func (s *SoupDecorator) GetMovies() ([]dto.RawFilmData, error) {
 
 	root := soup.HTMLParse(out)
 
+	// potentially I can range through `allMovies` and return a channel with results
 	allMovies := root.FindAll("div", "class", "movies_blcks")
 
 	for _, movie := range allMovies {

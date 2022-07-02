@@ -42,9 +42,9 @@ func TestScraper_GetAllFilms_WithNewResults(t *testing.T) {
 
 	_, films := scraper.GetFilms(context.Background())
 
-	var filmsCollection []model.Film
+	var responseCollection []dto.FilmResponse
 	for f := range films {
-		filmsCollection = append(filmsCollection, f)
+		responseCollection = append(responseCollection, f)
 	}
 
 	location, err := time.LoadLocation("Europe/Chisinau")
@@ -67,10 +67,15 @@ func TestScraper_GetAllFilms_WithNewResults(t *testing.T) {
 		},
 	}
 
-	assert.Len(t, filmsCollection, 2)
+	assert.Len(t, responseCollection, 2)
 
-	for _, c := range expectedFilms {
-		assert.Contains(t, filmsCollection, c)
+	var filmsCollection []model.Film
+	for _, response := range responseCollection {
+		filmsCollection = append(filmsCollection, response.Film)
+	}
+
+	for _, expectedFilmModel := range expectedFilms {
+		assert.Contains(t, filmsCollection, expectedFilmModel)
 	}
 }
 
@@ -98,7 +103,7 @@ func TestScraper_GetAllFilms_WithAlreadyExistingResults(t *testing.T) {
 
 	_, films := scraper.GetFilms(context.Background())
 
-	var filmsCollection []model.Film
+	var filmsCollection []dto.FilmResponse
 	for f := range films {
 		filmsCollection = append(filmsCollection, f)
 	}

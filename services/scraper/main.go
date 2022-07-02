@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"scraper/metrics"
@@ -31,6 +32,7 @@ var (
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 
 	logger := initLogger("scraper")
 
