@@ -1,6 +1,6 @@
 module imdb
 
-go 1.18
+go 1.24
 
 require (
 	common v0.0.1
