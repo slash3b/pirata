@@ -9,7 +9,7 @@ require (
 	github.com/mailjet/mailjet-apiv3-go/v3 v3.2.0
 	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/prometheus/client_golang v1.12.1
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.8.3
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/grpc v1.47.0
 )
